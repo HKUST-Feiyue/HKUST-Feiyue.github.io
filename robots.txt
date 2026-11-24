@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hkust-feiyue.github.io/sitemap.xml

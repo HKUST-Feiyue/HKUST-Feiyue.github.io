@@ -1,0 +1,113 @@
+{
+  "categories": [
+    {
+      "id": "kaoyan",
+      "reviewTeam": "postgraduate-reviewers",
+      "label": "考研",
+      "description": "备考、复试与录取经历"
+    },
+    {
+      "id": "overseas",
+      "reviewTeam": "study-abroad-reviewers",
+      "label": "留学",
+      "description": "选校、申请与海外求学"
+    },
+    {
+      "id": "career",
+      "reviewTeam": "career-reviewers",
+      "label": "就业",
+      "description": "实习、校招与职场起步"
+    },
+    {
+      "id": "public",
+      "reviewTeam": "public-sector-reviewers",
+      "label": "考公考编",
+      "description": "备考、招录与面试经验"
+    }
+  ],
+  "fields": [
+    {
+      "name": "author",
+      "label": "姓名 / 昵称",
+      "type": "text",
+      "required": true,
+      "maxLength": 60,
+      "placeholder": "用于署名和经历列表"
+    },
+    {
+      "name": "year",
+      "label": "毕业届次",
+      "group": "在校信息",
+      "type": "text",
+      "required": true,
+      "maxLength": 4,
+      "placeholder": "2026",
+      "inputMode": "numeric",
+      "pattern": "[0-9]{4}",
+      "suffix": "届",
+      "hint": "填写四位毕业年份，例如 2026 届。"
+    },
+    {
+      "name": "college",
+      "label": "学院",
+      "group": "在校信息",
+      "type": "text",
+      "required": true,
+      "maxLength": 100,
+      "placeholder": "例如 工学院"
+    },
+    {
+      "name": "major",
+      "label": "专业",
+      "group": "在校信息",
+      "type": "text",
+      "required": true,
+      "maxLength": 100,
+      "placeholder": "例如 计算机科学与工程"
+    },
+    {
+      "name": "destination",
+      "label": "去向单位",
+      "type": "text",
+      "required": true,
+      "maxLength": 160,
+      "placeholders": {
+        "kaoyan": "例如 北京理工大学",
+        "overseas": "例如 香港中文大学",
+        "career": "例如 字节跳动",
+        "public": "例如 广东省某单位"
+      }
+    },
+    {
+      "name": "program",
+      "label": "专业 / 项目 / 岗位",
+      "type": "text",
+      "required": false,
+      "maxLength": 120,
+      "placeholders": {
+        "kaoyan": "例如 计算机科学与技术",
+        "overseas": "例如 MSc@CS",
+        "career": "例如 前端工程师",
+        "public": "例如 综合管理岗"
+      }
+    },
+    {
+      "name": "body",
+      "label": "经历正文",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "写下准备过程、关键节点、经验教训，以及想对学弟学妹说的话",
+      "hint": "直接写普通文字也可以；如需分章节或列出步骤，可点击「载入示例」学习 Markdown 语法。",
+      "maxLength": 8000
+    },
+    {
+      "name": "contact",
+      "label": "联系方式",
+      "type": "textarea",
+      "required": false,
+      "placeholder": "例如：邮箱 hello@example.com\n微信：example_id\nGitHub：github.com/yourname",
+      "hint": "可以留下邮箱、微信号、QQ 或 GitHub 等联系渠道，只填写愿意向所有访客公开的信息；不必填写真实手机号。",
+      "maxLength": 500
+    }
+  ]
+}

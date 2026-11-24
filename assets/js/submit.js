@@ -1,0 +1,433 @@
+(() => {
+  const form = document.querySelector('#submission-form');
+  const category = document.querySelector('#category');
+  const fields = document.querySelector('#dynamic-fields');
+  const preview = document.querySelector('#preview');
+  const previewText = document.querySelector('#preview-text');
+  const button = document.querySelector('#preview-button');
+  const draftStatus = document.querySelector('#draft-status');
+  const draftKey = 'hkust-draft-v1';
+  const make = (tag, text) => {
+    const node = document.createElement(tag);
+    if (text != null) node.textContent = text;
+    return node;
+  };
+  fetch('data/schema.json').then(response => {
+    if (!response.ok) throw new Error('Could not load schema');
+    return response.json();
+  }).then(schema => {
+    for (const item of schema.categories) {
+      const option = make('option', item.label);
+      option.value = item.id;
+      category.append(option);
+    }
+    category.required = true;
+    const controls = new Map();
+    let educationFields = null;
+    let bodyPreview = null;
+    let bodyPreviewButton = null;
+    for (const field of schema.fields) {
+      const wrapper = make('div');
+      wrapper.className = 'field';
+      const label = make('label', field.label + (field.required ? ' *' : '（选填）'));
+      label.htmlFor = field.name;
+      const control = make(field.type === 'textarea' ? 'textarea' : 'input');
+      control.id = field.name;
+      control.name = field.name;
+      control.required = Boolean(field.required);
+      if (field.type !== 'textarea') control.type = field.type;
+      if (field.maxLength) control.maxLength = field.maxLength;
+      if (field.placeholder) control.placeholder = field.placeholder;
+      if (field.inputMode) control.inputMode = field.inputMode;
+      if (field.pattern) control.pattern = field.pattern;
+      if (field.type === 'textarea') control.rows = field.name === 'body' ? 9 : 3;
+      wrapper.append(label);
+      if (field.suffix) {
+        const inputRow = make('div');
+        inputRow.className = 'input-suffix';
+        inputRow.append(control, make('span', field.suffix));
+        wrapper.append(inputRow);
+      } else {
+        wrapper.append(control);
+      }
+      if (field.hint) {
+        const hint = make('small', field.hint);
+        hint.className = 'field-hint';
+        hint.id = field.name + '-hint';
+        control.setAttribute('aria-describedby', hint.id);
+        wrapper.append(hint);
+      }
+      if (field.name === 'body') {
+        const toolbar = make('div');
+        toolbar.className = 'markdown-toolbar';
+        toolbar.setAttribute('role', 'toolbar');
+        toolbar.setAttribute('aria-label', '正文排版快捷操作');
+        const actions = [
+          ['正文', 'plain'], ['H1', 'h1'], ['H2', 'h2'], ['H3', 'h3'],
+          ['加粗', 'bold'], ['斜体', 'italic'], ['无序列表', 'ul'],
+          ['有序列表', 'ol'], ['引用', 'quote']
+        ];
+        const apply = kind => {
+          const start = control.selectionStart;
+          const end = control.selectionEnd;
+          const selected = control.value.slice(start, end);
+          const lineStart = control.value.lastIndexOf('\n', start - 1) + 1;
+          let from = start, to = end, replacement = '', selectStart = 0, selectEnd = 0;
+          if (kind === 'plain') {
+            from = lineStart;
+            const before = control.value.slice(from, start);
+            const prefix = /^(?:#{1,3} |[-*] |\d+\. |> )/.exec(before)?.[0] || '';
+            if (!prefix) { control.focus(); return; }
+            replacement = before.slice(prefix.length) + selected;
+            selectStart = before.length - prefix.length;
+            selectEnd = selectStart + selected.length;
+          } else if (kind === 'bold' || kind === 'italic') {
+            const sample = selected || (kind === 'bold' ? '加粗文字' : '斜体文字');
+            replacement = kind === 'bold' ? '**' + sample + '**' : '*' + sample + '*';
+            selectStart = kind === 'bold' ? 2 : 1;
+            selectEnd = selectStart + sample.length;
+          } else {
+            from = lineStart;
+            const prefix = { h1: '# ', h2: '## ', h3: '### ', ul: '- ', ol: '1. ', quote: '> ' }[kind];
+            const before = control.value.slice(from, start);
+            const lineText = before + (selected || '在这里输入内容');
+            replacement = prefix + lineText;
+            selectStart = prefix.length + before.length;
+            selectEnd = selectStart + (selected || '在这里输入内容').length;
+          }
+          control.setRangeText(replacement, from, to, 'end');
+          control.focus();
+          control.setSelectionRange(from + selectStart, from + selectEnd);
+          control.dispatchEvent(new Event('input', { bubbles: true }));
+        };
+        for (const [label, kind] of actions) {
+          const action = make('button', label);
+          action.type = 'button';
+          action.className = 'markdown-action';
+          action.setAttribute('aria-label', label);
+          action.addEventListener('click', () => {
+            if (bodyPreview && !bodyPreview.hidden) bodyPreviewButton.click();
+            apply(kind);
+          });
+          toolbar.append(action);
+        }
+        bodyPreview = make('div');
+        bodyPreview.className = 'markdown-preview article-body';
+        bodyPreview.hidden = true;
+        bodyPreview.setAttribute('aria-label', '正文排版预览');
+        bodyPreviewButton = make('button', '预览排版');
+        bodyPreviewButton.type = 'button';
+        bodyPreviewButton.className = 'markdown-action markdown-preview-toggle';
+        bodyPreviewButton.setAttribute('aria-pressed', 'false');
+        bodyPreviewButton.addEventListener('click', () => {
+          const showing = bodyPreview.hidden;
+          if (showing) renderMarkdown(control.value, bodyPreview);
+          bodyPreview.hidden = !showing;
+          control.hidden = showing;
+          bodyPreviewButton.textContent = showing ? '返回编辑' : '预览排版';
+          bodyPreviewButton.setAttribute('aria-pressed', String(showing));
+          if (!showing) { control.dispatchEvent(new Event('input', {bubbles:true})); control.focus(); }
+        });
+        toolbar.append(bodyPreviewButton);
+        wrapper.insertBefore(toolbar, control);
+        control.after(bodyPreview);
+        const demoActions = make('div');
+        demoActions.className = 'demo-actions';
+        const loadDemo = make('button', '载入示例');
+        loadDemo.type = 'button';
+        loadDemo.className = 'markdown-action';
+        const clearBody = make('button', '清空正文');
+        clearBody.type = 'button';
+        clearBody.className = 'markdown-action';
+        loadDemo.addEventListener('click', async () => {
+          if (control.value.trim() && !confirm('载入示例会替换当前正文，确认继续吗？')) return;
+          try {
+            const response = await fetch('data/demo-submission.md');
+            if (!response.ok) throw new Error('Demo unavailable');
+            control.value = await response.text();
+            control.dispatchEvent(new Event('input', { bubbles: true }));
+            // The example is intentionally raw Markdown so beginners can inspect
+            // syntax before switching to the rendered preview themselves.
+            if (!bodyPreview.hidden) bodyPreviewButton.click();
+            control.focus();
+            draftStatus.textContent = '已载入带有 Markdown 格式的示例；可自行查看语法说明或点击「预览排版」。';
+          } catch { draftStatus.textContent = '示例加载失败，请稍后重试。'; }
+        });
+        clearBody.addEventListener('click', () => {
+          if (control.value.trim() && !confirm('确定清空正文吗？')) return;
+          control.value = '';
+          control.dispatchEvent(new Event('input', { bubbles: true }));
+          if (!bodyPreview.hidden) bodyPreviewButton.click();
+          control.focus();
+        });
+        demoActions.append(loadDemo, clearBody);
+        wrapper.insertBefore(demoActions, toolbar);
+        // No duplicate Markdown engine or external editor dependency.
+        const guide = make('details');
+        guide.className = 'markdown-help';
+        guide.append(make('summary', '第一次写 Markdown？查看排版语法'));
+        const explanation = make('div');
+        explanation.className = 'markdown-help-content';
+        const examples = [
+          ['## 小标题', '使用 ## 开始一个章节'],
+          ['### 子标题', '使用 ### 细分章节'],
+          ['**重点文字**', '用两个星号突出重要内容'],
+          ['- 一条经验', '用 - 整理无序清单'],
+          ['1. 第一步', '用数字和句点表示步骤'],
+          ['> 提醒', '用 > 写出引用或提示']
+        ];
+        for (const [syntax, meaning] of examples) {
+          const item = make('div');
+          item.append(make('code', syntax), make('span', meaning));
+          explanation.append(item);
+        }
+        explanation.append(make('p', '以上符号只有在「编辑」时可见；点击右上角「预览排版」就能看到最终文章的效果。也可以完全不使用 Markdown，直接写普通文字。'));
+        guide.append(explanation);
+        wrapper.insertBefore(guide, toolbar);
+        const guidance = make('small', '可直接粘贴 Markdown；也可以载入示例学习写作，再一键清空。');
+        guidance.className = 'field-hint';
+        wrapper.append(guidance);
+      }
+      if (field.group) {
+        if (!educationFields) {
+          educationFields = make('fieldset');
+          educationFields.className = 'education-fields';
+          educationFields.append(make('legend', field.group));
+          fields.append(educationFields);
+        }
+        educationFields.append(wrapper);
+      } else {
+        fields.append(wrapper);
+      }
+      controls.set(field.name, control);
+    }
+    // Prefer CSS field-sizing: content; fallback to scrollHeight for WebKit
+    // and older browsers, without a second draggable overlay on textareas.
+    for (const control of controls.values()) {
+      if (control.tagName !== 'TEXTAREA') continue;
+      if (CSS.supports('field-sizing', 'content')) continue;
+      const grow = () => {
+        if (control.hidden) return;
+        control.style.height = 'auto';
+        control.style.height = Math.max(control.id === 'body' ? 240 : 96, control.scrollHeight) + 'px';
+      };
+      control.addEventListener('input', grow);
+      window.addEventListener('resize', grow, {passive:true});
+      requestAnimationFrame(grow);
+    }
+    const year = controls.get('year');
+    year.addEventListener('input', () => {
+      const clean = year.value.replace(/[^0-9]/g, '').slice(0, 4);
+      if (year.value !== clean) year.value = clean;
+    });
+    const updateCategory = () => {
+      for (const name of ['destination', 'program']) {
+        const definition = schema.fields.find(field => field.name === name);
+        controls.get(name).placeholder = definition.placeholders[category.value] || '';
+      }
+    };
+    category.addEventListener('change', updateCategory);
+    updateCategory();
+
+    const hidePreview = () => { preview.hidden = true; };
+    try {
+      const draft = JSON.parse(sessionStorage.getItem(draftKey) || 'null');
+      if (draft) {
+        for (const [name, value] of Object.entries(draft)) {
+          const control = name === 'category' ? category : controls.get(name);
+          if (control && name !== 'contact' && typeof value === 'string') control.value = value;
+        }
+        draftStatus.textContent = '已恢复当前标签页的草稿（不含联系方式），尚未提交。';
+      }
+    } catch {}
+    updateCategory();
+    const save = () => {
+      hidePreview();
+      if (bodyPreview && !bodyPreview.hidden) renderMarkdown(controls.get('body').value, bodyPreview);
+      try {
+        const values = Object.fromEntries(new FormData(form));
+        delete values.contact;
+        sessionStorage.setItem(draftKey, JSON.stringify(values));
+      } catch { draftStatus.textContent = '无法暂存草稿，请自行备份。'; }
+    };
+    form.addEventListener('input', save);
+    form.addEventListener('change', save);
+    form.addEventListener('reset', () => {
+      hidePreview();
+      if (bodyPreview && !bodyPreview.hidden) bodyPreviewButton.click();
+      try { sessionStorage.removeItem(draftKey); } catch {}
+      draftStatus.textContent = '草稿已清空，尚未提交。';
+      requestAnimationFrame(() => {
+        updateCategory();
+      });
+    });
+    const renderMarkdown = (source, target) => {
+      if (!window.marked || !window.DOMPurify) {
+        target.textContent = '预览组件暂不可用，请检查网络后刷新。';
+        return;
+      }
+      // Never trust the Markdown input or allow embedded HTML to execute.
+      const safeSource = source.replace(/<(?=[a-z!/])/gi, '&lt;');
+      target.innerHTML = DOMPurify.sanitize(marked.parse(safeSource, { gfm: true, breaks: false }), {
+        USE_PROFILES: { html: true },
+        FORBID_TAGS: ['style', 'iframe', 'form'],
+        FORBID_ATTR: ['style']
+      });
+      target.querySelectorAll('a').forEach(link => {
+        link.rel = 'noopener noreferrer';
+      });
+    };
+    // Mirror the published article's heading anchors and H2/H3 contents list.
+    // Both previews render the same .article-body rules as generated articles.
+    const buildArticleToc = body => {
+      const headings = [...body.querySelectorAll('h2, h3')];
+      const used = new Set();
+      for (const heading of headings) {
+        const base = heading.textContent.toLowerCase()
+          .replace(/[^\p{L}\p{N}_\s-]/gu, '').trim().replace(/[-\s]+/g, '-') || 'section';
+                let id = base;
+        for (let i = 1; used.has(id); i++) id = base + '_' + i;
+        heading.id = id;
+        used.add(id);
+      }
+      if (headings.length < 2) return null;
+      const nav = make('details');
+      nav.className = 'article-toc';
+      nav.append(make('summary', '本页目录'));
+      const list = make('ul');
+      for (const heading of headings) {
+        const item = make('li');
+        item.className = 'toc-depth-' + heading.tagName.slice(1);
+        const link = make('a', heading.textContent);
+        link.href = '#' + heading.id;
+        item.append(link);
+        list.append(item);
+      }
+      const panel = make('div');
+      panel.className = 'article-toc-panel';
+      const clip = make('div');
+      clip.className = 'article-toc-clip';
+      clip.append(list);
+      panel.append(clip);
+      nav.append(panel);
+      return nav;
+    };
+    button.addEventListener('click', () => {
+      for (const field of schema.fields) {
+        const control = controls.get(field.name);
+        control.setCustomValidity(field.required && !control.value.trim() ? '请填写' + field.label : '');
+      }
+      if (!form.reportValidity()) return;
+      const data = new FormData(form);
+      const selected = schema.categories.find(item => item.id === data.get('category'));
+      if (!selected) return;
+      const author = String(data.get('author') || '').trim();
+      const destination = String(data.get('destination') || '').trim();
+      const program = String(data.get('program') || '').trim();
+      const title = destination + (program ? ' · ' + program : '');
+      previewText.replaceChildren();
+      const back = make('span', '返回' + selected.label);
+      back.className = 'article-back';
+      previewText.append(back, make('h1', title));
+      const byline = make('p', [author, String(data.get('year')).trim() + ' 届', String(data.get('college') || '').trim(), String(data.get('major') || '').trim()].filter(Boolean).join(' · '));
+      byline.className = 'article-byline';
+      previewText.append(byline);
+      const body = make('div');
+      body.className = 'article-body';
+      renderMarkdown(String(data.get('body') || ''), body);
+      const toc = buildArticleToc(body);
+      if (toc) previewText.append(toc);
+      previewText.append(body);
+      if (toc) window.initArticleToc?.(previewText);
+      const contact = String(data.get('contact') || '').trim();
+      if (contact) {
+        const aside = make('aside');
+        aside.className = 'article-contact';
+        aside.append(make('strong', '联系作者'), make('p', contact));
+        previewText.append(aside);
+      }
+      preview.hidden = false;
+      preview.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    });
+    for (const control of controls.values()) control.addEventListener('input', () => control.setCustomValidity(''));
+
+    // Public posting is opt-in. A successful Issue creation is not publication.
+    const submitButton = document.querySelector('#submit-button');
+    const submitStatus = document.querySelector('#submission-status');
+    const captchaHost = document.querySelector('#submission-turnstile');
+    const config = window.HKUST_SUBMISSION_CONFIG || {};
+    const enabled = config.enabled === true &&
+      /^https:\/\//.test(config.apiEndpoint || '') && Boolean(config.turnstileSiteKey);
+    let widgetId = null;
+    let submitting = false;
+    const say = (message, state = 'info') => {
+      submitStatus.textContent = message;
+      submitStatus.dataset.state = state;
+    };
+    if (enabled) {
+      captchaHost.hidden = false;
+      say('请先完成人机验证，再确认公开投稿。');
+      const captchaScript = document.createElement('script');
+      captchaScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      captchaScript.async = true;
+      captchaScript.onload = () => {
+        try {
+          widgetId = window.turnstile.render(captchaHost, {
+            sitekey: config.turnstileSiteKey,
+            action: 'hkust_feiyue_submit',
+            callback: () => { if (!submitting) { submitButton.disabled = false; say('验证完成，可以投稿。', 'success'); } },
+            'expired-callback': () => { submitButton.disabled = true; say('验证已过期，请重新验证。', 'error'); },
+            'error-callback': () => { submitButton.disabled = true; say('人机验证暂不可用，请刷新重试。', 'error'); }
+          });
+        } catch { say('无法加载人机验证，请刷新重试。', 'error'); }
+      };
+      captchaScript.onerror = () => say('无法加载人机验证，请稍后重试。', 'error');
+      document.head.append(captchaScript);
+      submitButton.addEventListener('click', async () => {
+        if (submitting || !form.reportValidity()) return;
+        const token = widgetId === null ? '' : window.turnstile?.getResponse(widgetId);
+        if (!token) { say('请先完成人机验证。', 'error'); return; }
+        const values = Object.fromEntries(new FormData(form));
+        const payload = { version: 1, ...values, turnstileToken: token };
+        if (new TextEncoder().encode(JSON.stringify(payload)).length > 65536) {
+          say('内容过长，请精简后重试。', 'error');
+          return;
+        }
+        submitting = true;
+        submitButton.disabled = true;
+        submitButton.textContent = '正在提交…';
+        say('正在提交，请勿重复点击。');
+        try {
+          const response = await fetch(config.apiEndpoint, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const result = await response.json();
+          if (!response.ok || !result.ok || !/^https:\/\/github\.com\/HKUST-Feiyue\/HKUST-Feiyue\/issues\/\d+$/.test(result.issueUrl || ''))
+            throw new Error(result.message || '投稿未成功，请稍后再试。');
+          form.reset();
+          submitStatus.dataset.state = 'success';
+          submitStatus.replaceChildren(make('span', '已提交到 GitHub，审核通过后才会发布。 '));
+          const link = make('a', '查看投稿记录');
+          link.href = result.issueUrl;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          submitStatus.append(link);
+        } catch (error) {
+          say(error.message || '网络异常，投稿未确认保存。请检查 Issue 列表后再试。', 'error');
+        } finally {
+          submitting = false;
+          submitButton.textContent = '投稿分享';
+          window.turnstile?.reset(widgetId);
+          submitButton.disabled = true;
+        }
+      });
+    } else {
+      say(config.localPreview ? '本地预览可填写、预览和保存草稿；投稿验证仅在正式网站提供。' : '投稿服务暂未开放，可先预览并保存草稿。');
+    }
+
+  }).catch(() => {
+    fields.textContent = '表单加载失败，请刷新重试。';
+    button.disabled = true;
+  });
+})();
