@@ -1443,6 +1443,10 @@ proportions; no composition, mask, crop or duplicate seal. */
   object-fit: contain;
 }
 
+[data-theme=dark] :is(.brand-logo, .mobile-brand-logo, .footer-logo) {
+  filter: brightness(0) invert(1);
+}
+
 .campus-banner {
   flex: none;
   height: clamp(270px,30vw,440px);
