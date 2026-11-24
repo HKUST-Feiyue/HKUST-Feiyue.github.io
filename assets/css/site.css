@@ -196,6 +196,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .section-heading {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: end;
   gap: 20px;
@@ -211,6 +212,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 .section-actions {
   display: flex;
+  margin-left: auto;
+  max-width: 100%;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
@@ -1441,6 +1444,20 @@ proportions; no composition, mask, crop or duplicate seal. */
   max-width: 100%;
   height: auto;
   object-fit: contain;
+}
+
+.language-toggle {
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.topbar .language-toggle {
+  width: auto;
 }
 
 [data-theme=dark] :is(.brand-logo, .mobile-brand-logo, .footer-logo) {

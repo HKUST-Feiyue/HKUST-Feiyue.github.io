@@ -1,4 +1,6 @@
-(() => {
+(async () => {
+  const i18n = await window.HKUST_I18N.ready;
+  const { t } = i18n;
   // The saved theme is applied before CSS in theme-init.js, not during first paint.
   const root = document.documentElement;
   const siteName = document.querySelector('.footer-brand-name')?.textContent.trim();
@@ -19,9 +21,9 @@
     const next = modes[(modes.indexOf(mode) + 1) % modes.length];
     const labels = {system:'跟随系统',light:'浅色模式',dark:'深色模式'};
     themeButton.dataset.mode = mode;
-    themeButton.setAttribute('aria-label', '当前' + labels[mode] + '，切换到' + labels[next]);
-    themeButton.title = labels[mode] + ' · 点击切换到' + labels[next];
-    themeButton.querySelector('#theme-label').textContent = labels[mode];
+    themeButton.setAttribute('aria-label', t('当前{current}，切换到{next}', {current: labels[mode], next: labels[next]}));
+    themeButton.title = t('{current} · 点击切换到{next}', {current: labels[mode], next: labels[next]});
+    i18n.text(themeButton.querySelector('#theme-label'), labels[mode]);
   };
   themeButton?.addEventListener('click', () => {
     const mode = root.dataset.theme || 'system';
@@ -40,6 +42,7 @@
   });
   window.addEventListener('pageshow', syncThemeControls);
   syncThemeControls();
+  addEventListener('hkust:language', () => { syncThemeControls(); setMenu(isOpen()); });
   // Match the personal site's article directory while retaining native details.
   const initArticleToc = article => {
     const contents = article.querySelector('details.article-toc');
@@ -156,13 +159,20 @@
   const toggle = document.querySelector('#menu-toggle');
   const shell = document.querySelector('.shell');
   const mobile = matchMedia('(max-width: 900px)');
+  const languageToggle = document.querySelector('.language-toggle');
+  const placeLanguageToggle = () => {
+    if (mobile.matches) toggle.before(languageToggle);
+    else document.querySelector('.sidebar-bottom').prepend(languageToggle);
+  };
+  placeLanguageToggle();
+  mobile.addEventListener('change', placeLanguageToggle);
   const isOpen = () => mobile.matches && shell.classList.contains('menu-open');
   const setMenu = (open, restoreFocus = false) => {
     open = Boolean(open && mobile.matches);
     shell.classList.toggle('menu-open', open);
     sidebar.inert = mobile.matches && !open;
     toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? '关闭导航' : '打开导航');
+    toggle.setAttribute('aria-label', t(open ? '关闭导航' : '打开导航'));
     if (restoreFocus && mobile.matches) toggle.focus();
   };
   // Navigation has its own lifecycle: dismiss the outgoing menu synchronously,
@@ -217,7 +227,7 @@
     yearTrigger.hidden = false;
     const options = [...year.options];
     const updateMenu = () => {
-      document.querySelector('#year-label').textContent = year.selectedOptions[0]?.textContent || '全部届次';
+      document.querySelector('#year-label').textContent = year.selectedOptions[0]?.textContent || t('全部届次');
       yearMenu.querySelectorAll('button').forEach(option => {
         const selected = option.dataset.value === year.value;
         option.setAttribute('aria-pressed', String(selected));
@@ -230,6 +240,7 @@
       item.className = 'year-option';
       item.dataset.value = option.value;
       item.textContent = option.textContent;
+      if (option.value === 'all') i18n.text(item, '全部届次');
       item.addEventListener('click', () => {
         year.value = item.dataset.value;
         year.dispatchEvent(new Event('change', {bubbles:true}));
@@ -319,7 +330,7 @@
         hasDemo ||= card.dataset.demo === 'true';
       }
     }
-    count.textContent = visibleCount + ' 篇经历' + (hasDemo ? ' · 含演示内容' : '');
+    count.textContent = t('{count} 篇经历', {count: visibleCount}) + (hasDemo ? t(' · 含演示内容') : '');
     empty.hidden = visibleCount > 0;
   };
   const dialog = document.querySelector('#search-dialog');
@@ -374,6 +385,7 @@
   dialog.addEventListener('close', () => {
     ++requestId;
     search.value = '';
+    delete results.dataset.i18n;
     results.replaceChildren();
     syncScrollHint();
     if (!archive.hidden) searchOpen.focus({preventScroll:true});
@@ -392,11 +404,12 @@
   search.addEventListener('input', async () => {
     const query = search.value.trim();
     const id = ++requestId;
+    delete results.dataset.i18n;
     results.replaceChildren();
     results.scrollTop = 0;
     syncScrollHint();
     if (!query) return;
-    results.textContent = '正在搜索…';
+    i18n.text(results, '正在搜索…');
     try {
       const pagefind = await loadSearch();
       const found = await pagefind.debouncedSearch(query);
@@ -445,18 +458,19 @@
         row.append(link);
         list.append(row);
       }
+      delete results.dataset.i18n;
       results.replaceChildren();
       if (list.childElementCount) {
         const summary = document.createElement('p');
         summary.className = 'search-summary';
-        summary.textContent = `找到 ${list.childElementCount} 篇经历`;
+        i18n.text(summary, '找到 {count} 篇经历', {count: list.childElementCount});
         results.append(summary, list);
       }
-      else results.textContent = '没有找到匹配内容';
+      else i18n.text(results, '没有找到匹配内容');
       syncScrollHint();
     } catch (error) {
       if (id !== requestId) return;
-      results.textContent = '全文搜索暂不可用，请刷新页面后重试。';
+      i18n.text(results, '全文搜索暂不可用，请刷新页面后重试。');
       console.error('Pagefind search failed', error);
     }
   });
@@ -476,8 +490,8 @@
     nav.querySelectorAll('[aria-current]').forEach(link => link.removeAttribute('aria-current'));
     const active = isHome ? nav.querySelector('a:not([data-category])') : current || nav.querySelector('[data-category="all"]');
     active?.setAttribute('aria-current', 'page');
-    document.querySelector('#stories-heading').textContent = current ? current.dataset.categoryLabel + '经历' : '全部经历';
-    document.querySelector('#category-intro').textContent = current ? current.dataset.categoryDescription + '，阅读同学的经验分享。' : '按方向浏览同学分享的升学与职业经验。';
+    document.querySelector('#stories-heading').textContent = current ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
+    document.querySelector('#category-intro').textContent = current ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
     year.value = history.state?.year || 'all';
     year.dispatchEvent(new Event('yearsync'));
     renderFilters();
@@ -522,4 +536,13 @@
   });
   window.addEventListener('popstate', renderView);
   renderView();
+  addEventListener('hkust:language', () => {
+    const current = nav.querySelector('[data-category][aria-current=page]');
+    document.querySelector('#stories-heading').textContent = current && current.dataset.category !== 'all'
+      ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
+    document.querySelector('#category-intro').textContent = current && current.dataset.category !== 'all'
+      ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
+    year.dispatchEvent(new Event('yearsync'));
+    renderFilters();
+  });
 })();

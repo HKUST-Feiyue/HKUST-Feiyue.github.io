@@ -1,73 +1,73 @@
 [
   {
     "demo": true,
-    "title": "某智能制造企业 · 项目运营方向",
+    "title": "某智能製造企業 · 項目運營方向",
     "category": "career",
-    "author": "周同学",
+    "author": "周同學",
     "year": "2026",
-    "college": "某学院",
-    "major": "某专业",
-    "program": "项目运营方向",
-    "destination": "某智能制造企业",
-    "excerpt": "从第一版简历没人回复，到逐渐学会用项目细节解释自己的能力，我的求职准备经历了几次转弯。",
+    "college": "某學院",
+    "major": "某專業",
+    "program": "項目運營方向",
+    "destination": "某智能製造企業",
+    "excerpt": "從第一版簡歷沒人回覆，到逐漸學會用項目細節解釋自己的能力，我的求職準備經歷了幾次轉彎。",
     "tags": [
-      "实习",
-      "简历",
-      "面试"
+      "實習",
+      "簡歷",
+      "面試"
     ],
     "url": "articles/demo-career.html"
   },
   {
     "demo": true,
-    "title": "香港某高校 · 理工类硕士项目",
+    "title": "香港某高校 · 理工類碩士項目",
     "category": "overseas",
-    "author": "陈同学",
+    "author": "陳同學",
     "year": "2026",
-    "college": "某学院",
-    "major": "某专业",
-    "program": "理工类硕士项目",
+    "college": "某學院",
+    "major": "某專業",
+    "program": "理工類碩士項目",
     "destination": "香港某高校",
-    "excerpt": "申请季里最难的不是填网申，而是把课程、项目和未来打算整理成一条能说清楚的主线。",
+    "excerpt": "申請季裏最難的不是填網申，而是把課程、項目和未來打算整理成一條能説清楚的主線。",
     "tags": [
-      "选校",
-      "文书",
-      "时间规划"
+      "選校",
+      "文書",
+      "時間規劃"
     ],
     "url": "articles/demo-overseas.html"
   },
   {
     "demo": true,
-    "title": "某理工类高校 · 计算机科学与工程相关专业",
+    "title": "某理工類高校 · 計算機科學與工程相關專業",
     "category": "kaoyan",
-    "author": "林同学",
+    "author": "林同學",
     "year": "2026",
-    "college": "某学院",
-    "major": "某专业",
-    "program": "计算机科学与工程相关专业",
-    "destination": "某理工类高校",
-    "excerpt": "从择校犹豫到复习计划落地，我最有感触的是把信息焦虑变成每周都能执行的小任务。",
+    "college": "某學院",
+    "major": "某專業",
+    "program": "計算機科學與工程相關專業",
+    "destination": "某理工類高校",
+    "excerpt": "從擇校猶豫到複習計劃落地，我最有感觸的是把信息焦慮變成每週都能執行的小任務。",
     "tags": [
-      "择校",
-      "初试",
-      "复试"
+      "擇校",
+      "初試",
+      "複試"
     ],
     "url": "articles/demo-postgraduate.html"
   },
   {
     "demo": true,
-    "title": "某地事业单位招录方向 · 综合管理岗位",
+    "title": "某地事業單位招錄方向 · 綜合管理崗位",
     "category": "public",
-    "author": "许同学",
+    "author": "許同學",
     "year": "2026",
-    "college": "某学院",
-    "major": "某专业",
-    "program": "综合管理岗位",
-    "destination": "某地事业单位招录方向",
-    "excerpt": "报名条件、笔试节奏和面试表达，我最想提醒的是先看清岗位，再决定如何投入时间。",
+    "college": "某學院",
+    "major": "某專業",
+    "program": "綜合管理崗位",
+    "destination": "某地事業單位招錄方向",
+    "excerpt": "報名條件、筆試節奏和麪試表達，我最想提醒的是先看清崗位，再決定如何投入時間。",
     "tags": [
-      "选岗",
-      "笔试",
-      "面试"
+      "選崗",
+      "筆試",
+      "面試"
     ],
     "url": "articles/demo-public.html"
   }

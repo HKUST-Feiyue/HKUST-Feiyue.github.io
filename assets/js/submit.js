@@ -1,4 +1,6 @@
-(() => {
+(async () => {
+  const i18n = await window.HKUST_I18N.ready;
+  const { t } = i18n;
   const form = document.querySelector('#submission-form');
   const category = document.querySelector('#category');
   const fields = document.querySelector('#dynamic-fields');
@@ -12,12 +14,13 @@
     if (text != null) node.textContent = text;
     return node;
   };
+  const ui = (tag, key, params) => i18n.text(make(tag), key, params);
   fetch('data/schema.json').then(response => {
     if (!response.ok) throw new Error('Could not load schema');
     return response.json();
   }).then(schema => {
     for (const item of schema.categories) {
-      const option = make('option', item.label);
+      const option = ui('option', item.label);
       option.value = item.id;
       category.append(option);
     }
@@ -29,7 +32,8 @@
     for (const field of schema.fields) {
       const wrapper = make('div');
       wrapper.className = 'field';
-      const label = make('label', field.label + (field.required ? ' *' : '（选填）'));
+      const label = make('label');
+      label.append(ui('span', field.label), field.required ? make('span', ' *') : ui('span', '（选填）'));
       label.htmlFor = field.name;
       const control = make(field.type === 'textarea' ? 'textarea' : 'input');
       control.id = field.name;
@@ -37,7 +41,7 @@
       control.required = Boolean(field.required);
       if (field.type !== 'textarea') control.type = field.type;
       if (field.maxLength) control.maxLength = field.maxLength;
-      if (field.placeholder) control.placeholder = field.placeholder;
+      if (field.placeholder) i18n.attribute(control, 'placeholder', field.placeholder);
       if (field.inputMode) control.inputMode = field.inputMode;
       if (field.pattern) control.pattern = field.pattern;
       if (field.type === 'textarea') control.rows = field.name === 'body' ? 9 : 3;
@@ -45,13 +49,13 @@
       if (field.suffix) {
         const inputRow = make('div');
         inputRow.className = 'input-suffix';
-        inputRow.append(control, make('span', field.suffix));
+        inputRow.append(control, ui('span', field.suffix));
         wrapper.append(inputRow);
       } else {
         wrapper.append(control);
       }
       if (field.hint) {
-        const hint = make('small', field.hint);
+        const hint = ui('small', field.hint);
         hint.className = 'field-hint';
         hint.id = field.name + '-hint';
         control.setAttribute('aria-describedby', hint.id);
@@ -61,7 +65,7 @@
         const toolbar = make('div');
         toolbar.className = 'markdown-toolbar';
         toolbar.setAttribute('role', 'toolbar');
-        toolbar.setAttribute('aria-label', '正文排版快捷操作');
+        i18n.attribute(toolbar, 'aria-label', '正文排版快捷操作');
         const actions = [
           ['正文', 'plain'], ['H1', 'h1'], ['H2', 'h2'], ['H3', 'h3'],
           ['加粗', 'bold'], ['斜体', 'italic'], ['无序列表', 'ul'],
@@ -82,7 +86,7 @@
             selectStart = before.length - prefix.length;
             selectEnd = selectStart + selected.length;
           } else if (kind === 'bold' || kind === 'italic') {
-            const sample = selected || (kind === 'bold' ? '加粗文字' : '斜体文字');
+            const sample = selected || (t(kind === 'bold' ? '加粗文字' : '斜体文字'));
             replacement = kind === 'bold' ? '**' + sample + '**' : '*' + sample + '*';
             selectStart = kind === 'bold' ? 2 : 1;
             selectEnd = selectStart + sample.length;
@@ -90,10 +94,10 @@
             from = lineStart;
             const prefix = { h1: '# ', h2: '## ', h3: '### ', ul: '- ', ol: '1. ', quote: '> ' }[kind];
             const before = control.value.slice(from, start);
-            const lineText = before + (selected || '在这里输入内容');
+            const lineText = before + (selected || t('在这里输入内容'));
             replacement = prefix + lineText;
             selectStart = prefix.length + before.length;
-            selectEnd = selectStart + (selected || '在这里输入内容').length;
+            selectEnd = selectStart + (selected || t('在这里输入内容')).length;
           }
           control.setRangeText(replacement, from, to, 'end');
           control.focus();
@@ -101,10 +105,10 @@
           control.dispatchEvent(new Event('input', { bubbles: true }));
         };
         for (const [label, kind] of actions) {
-          const action = make('button', label);
+          const action = ui('button', label);
           action.type = 'button';
           action.className = 'markdown-action';
-          action.setAttribute('aria-label', label);
+          i18n.attribute(action, 'aria-label', label);
           action.addEventListener('click', () => {
             if (bodyPreview && !bodyPreview.hidden) bodyPreviewButton.click();
             apply(kind);
@@ -114,8 +118,8 @@
         bodyPreview = make('div');
         bodyPreview.className = 'markdown-preview article-body';
         bodyPreview.hidden = true;
-        bodyPreview.setAttribute('aria-label', '正文排版预览');
-        bodyPreviewButton = make('button', '预览排版');
+        i18n.attribute(bodyPreview, 'aria-label', '正文排版预览');
+        bodyPreviewButton = ui('button', '预览排版');
         bodyPreviewButton.type = 'button';
         bodyPreviewButton.className = 'markdown-action markdown-preview-toggle';
         bodyPreviewButton.setAttribute('aria-pressed', 'false');
@@ -124,7 +128,7 @@
           if (showing) renderMarkdown(control.value, bodyPreview);
           bodyPreview.hidden = !showing;
           control.hidden = showing;
-          bodyPreviewButton.textContent = showing ? '返回编辑' : '预览排版';
+          i18n.text(bodyPreviewButton, showing ? '返回编辑' : '预览排版');
           bodyPreviewButton.setAttribute('aria-pressed', String(showing));
           if (!showing) { control.dispatchEvent(new Event('input', {bubbles:true})); control.focus(); }
         });
@@ -133,14 +137,14 @@
         control.after(bodyPreview);
         const demoActions = make('div');
         demoActions.className = 'demo-actions';
-        const loadDemo = make('button', '载入示例');
+        const loadDemo = ui('button', '载入示例');
         loadDemo.type = 'button';
         loadDemo.className = 'markdown-action';
-        const clearBody = make('button', '清空正文');
+        const clearBody = ui('button', '清空正文');
         clearBody.type = 'button';
         clearBody.className = 'markdown-action';
         loadDemo.addEventListener('click', async () => {
-          if (control.value.trim() && !confirm('载入示例会替换当前正文，确认继续吗？')) return;
+          if (control.value.trim() && !confirm(t('载入示例会替换当前正文，确认继续吗？'))) return;
           try {
             const response = await fetch('data/demo-submission.md');
             if (!response.ok) throw new Error('Demo unavailable');
@@ -150,11 +154,11 @@
             // syntax before switching to the rendered preview themselves.
             if (!bodyPreview.hidden) bodyPreviewButton.click();
             control.focus();
-            draftStatus.textContent = '已载入带有 Markdown 格式的示例；可自行查看语法说明或点击「预览排版」。';
-          } catch { draftStatus.textContent = '示例加载失败，请稍后重试。'; }
+            i18n.text(draftStatus, '已载入带有 Markdown 格式的示例；可自行查看语法说明或点击「预览排版」。');
+          } catch { i18n.text(draftStatus, '示例加载失败，请稍后重试。'); }
         });
         clearBody.addEventListener('click', () => {
-          if (control.value.trim() && !confirm('确定清空正文吗？')) return;
+          if (control.value.trim() && !confirm(t('确定清空正文吗？'))) return;
           control.value = '';
           control.dispatchEvent(new Event('input', { bubbles: true }));
           if (!bodyPreview.hidden) bodyPreviewButton.click();
@@ -165,7 +169,7 @@
         // No duplicate Markdown engine or external editor dependency.
         const guide = make('details');
         guide.className = 'markdown-help';
-        guide.append(make('summary', '第一次写 Markdown？查看排版语法'));
+        guide.append(ui('summary', '第一次写 Markdown？查看排版语法'));
         const explanation = make('div');
         explanation.className = 'markdown-help-content';
         const examples = [
@@ -178,13 +182,13 @@
         ];
         for (const [syntax, meaning] of examples) {
           const item = make('div');
-          item.append(make('code', syntax), make('span', meaning));
+          item.append(ui('code', syntax), ui('span', meaning));
           explanation.append(item);
         }
-        explanation.append(make('p', '以上符号只有在「编辑」时可见；点击右上角「预览排版」就能看到最终文章的效果。也可以完全不使用 Markdown，直接写普通文字。'));
+        explanation.append(ui('p', '以上符号只有在「编辑」时可见；点击右上角「预览排版」就能看到最终文章的效果。也可以完全不使用 Markdown，直接写普通文字。'));
         guide.append(explanation);
         wrapper.insertBefore(guide, toolbar);
-        const guidance = make('small', '可直接粘贴 Markdown；也可以载入示例学习写作，再一键清空。');
+        const guidance = ui('small', '可直接粘贴 Markdown；也可以载入示例学习写作，再一键清空。');
         guidance.className = 'field-hint';
         wrapper.append(guidance);
       }
@@ -192,7 +196,7 @@
         if (!educationFields) {
           educationFields = make('fieldset');
           educationFields.className = 'education-fields';
-          educationFields.append(make('legend', field.group));
+          educationFields.append(ui('legend', field.group));
           fields.append(educationFields);
         }
         educationFields.append(wrapper);
@@ -223,7 +227,7 @@
     const updateCategory = () => {
       for (const name of ['destination', 'program']) {
         const definition = schema.fields.find(field => field.name === name);
-        controls.get(name).placeholder = definition.placeholders[category.value] || '';
+        i18n.attribute(controls.get(name), 'placeholder', definition.placeholders[category.value] || '');
       }
     };
     category.addEventListener('change', updateCategory);
@@ -237,7 +241,7 @@
           const control = name === 'category' ? category : controls.get(name);
           if (control && name !== 'contact' && typeof value === 'string') control.value = value;
         }
-        draftStatus.textContent = '已恢复当前标签页的草稿（不含联系方式），尚未提交。';
+        i18n.text(draftStatus, '已恢复当前标签页的草稿（不含联系方式），尚未提交。');
       }
     } catch {}
     updateCategory();
@@ -248,7 +252,7 @@
         const values = Object.fromEntries(new FormData(form));
         delete values.contact;
         sessionStorage.setItem(draftKey, JSON.stringify(values));
-      } catch { draftStatus.textContent = '无法暂存草稿，请自行备份。'; }
+      } catch { i18n.text(draftStatus, '无法暂存草稿，请自行备份。'); }
     };
     form.addEventListener('input', save);
     form.addEventListener('change', save);
@@ -256,14 +260,14 @@
       hidePreview();
       if (bodyPreview && !bodyPreview.hidden) bodyPreviewButton.click();
       try { sessionStorage.removeItem(draftKey); } catch {}
-      draftStatus.textContent = '草稿已清空，尚未提交。';
+      i18n.text(draftStatus, '草稿已清空，尚未提交。');
       requestAnimationFrame(() => {
         updateCategory();
       });
     });
     const renderMarkdown = (source, target) => {
       if (!window.marked || !window.DOMPurify) {
-        target.textContent = '预览组件暂不可用，请检查网络后刷新。';
+        i18n.text(target, '预览组件暂不可用，请检查网络后刷新。');
         return;
       }
       // Never trust the Markdown input or allow embedded HTML to execute.
@@ -293,7 +297,7 @@
       if (headings.length < 2) return null;
       const nav = make('details');
       nav.className = 'article-toc';
-      nav.append(make('summary', '本页目录'));
+      nav.append(ui('summary', '本页目录'));
       const list = make('ul');
       for (const heading of headings) {
         const item = make('li');
@@ -315,7 +319,7 @@
     button.addEventListener('click', () => {
       for (const field of schema.fields) {
         const control = controls.get(field.name);
-        control.setCustomValidity(field.required && !control.value.trim() ? '请填写' + field.label : '');
+        control.setCustomValidity(field.required && !control.value.trim() ? t('请填写{field}', {field: field.label}) : '');
       }
       if (!form.reportValidity()) return;
       const data = new FormData(form);
@@ -326,10 +330,16 @@
       const program = String(data.get('program') || '').trim();
       const title = destination + (program ? ' · ' + program : '');
       previewText.replaceChildren();
-      const back = make('span', '返回' + selected.label);
+      const back = ui('span', '返回{category}', {category: selected.label});
       back.className = 'article-back';
       previewText.append(back, make('h1', title));
-      const byline = make('p', [author, String(data.get('year')).trim() + ' 届', String(data.get('college') || '').trim(), String(data.get('major') || '').trim()].filter(Boolean).join(' · '));
+      const byline = make('p');
+      const details = [make('span', author), ui('span', '{year} 届', {year: String(data.get('year')).trim()}),
+        make('span', String(data.get('college') || '').trim()), make('span', String(data.get('major') || '').trim())];
+      details.filter(node => node.textContent).forEach((node, index) => {
+        if (index) byline.append(document.createTextNode(' · '));
+        byline.append(node);
+      });
       byline.className = 'article-byline';
       previewText.append(byline);
       const body = make('div');
@@ -343,7 +353,7 @@
       if (contact) {
         const aside = make('aside');
         aside.className = 'article-contact';
-        aside.append(make('strong', '联系作者'), make('p', contact));
+        aside.append(ui('strong', '联系作者'), make('p', contact));
         previewText.append(aside);
       }
       preview.hidden = false;
@@ -361,7 +371,7 @@
     let widgetId = null;
     let submitting = false;
     const say = (message, state = 'info') => {
-      submitStatus.textContent = message;
+      i18n.text(submitStatus, message);
       submitStatus.dataset.state = state;
     };
     if (enabled) {
@@ -370,17 +380,29 @@
       const captchaScript = document.createElement('script');
       captchaScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       captchaScript.async = true;
-      captchaScript.onload = () => {
+      const renderVerification = () => {
         try {
+          if (widgetId !== null) window.turnstile.remove(widgetId);
+          submitButton.disabled = true;
           widgetId = window.turnstile.render(captchaHost, {
             sitekey: config.turnstileSiteKey,
             action: 'hkust_feiyue_submit',
-            callback: () => { if (!submitting) { submitButton.disabled = false; say('验证完成，可以投稿。', 'success'); } },
+            language: i18n.language() === 'zh' ? 'zh-TW' : 'en',
+            callback: () => {
+              if (!submitting) {
+                submitButton.disabled = false;
+                if (!submitStatus.querySelector('a')) say('验证完成，可以投稿。', 'success');
+              }
+            },
             'expired-callback': () => { submitButton.disabled = true; say('验证已过期，请重新验证。', 'error'); },
             'error-callback': () => { submitButton.disabled = true; say('人机验证暂不可用，请刷新重试。', 'error'); }
           });
         } catch { say('无法加载人机验证，请刷新重试。', 'error'); }
       };
+      captchaScript.onload = renderVerification;
+      addEventListener('hkust:language', () => {
+        if (widgetId !== null) renderVerification();
+      });
       captchaScript.onerror = () => say('无法加载人机验证，请稍后重试。', 'error');
       document.head.append(captchaScript);
       submitButton.addEventListener('click', async () => {
@@ -395,7 +417,7 @@
         }
         submitting = true;
         submitButton.disabled = true;
-        submitButton.textContent = '正在提交…';
+        i18n.text(submitButton, '正在提交…');
         say('正在提交，请勿重复点击。');
         try {
           const response = await fetch(config.apiEndpoint, {
@@ -407,8 +429,9 @@
             throw new Error(result.message || '投稿未成功，请稍后再试。');
           form.reset();
           submitStatus.dataset.state = 'success';
-          submitStatus.replaceChildren(make('span', '已提交到 GitHub，审核通过后才会发布。 '));
-          const link = make('a', '查看投稿记录');
+          delete submitStatus.dataset.i18n;
+          submitStatus.replaceChildren(ui('span', '已提交到 GitHub，审核通过后才会发布。'), document.createTextNode(' '));
+          const link = ui('a', '查看投稿记录');
           link.href = result.issueUrl;
           link.target = '_blank';
           link.rel = 'noopener noreferrer';
@@ -417,7 +440,7 @@
           say(error.message || '网络异常，投稿未确认保存。请检查 Issue 列表后再试。', 'error');
         } finally {
           submitting = false;
-          submitButton.textContent = '投稿分享';
+          i18n.text(submitButton, '投稿分享');
           window.turnstile?.reset(widgetId);
           submitButton.disabled = true;
         }
@@ -426,8 +449,15 @@
       say(config.localPreview ? '本地预览可填写、预览和保存草稿；投稿验证仅在正式网站提供。' : '投稿服务暂未开放，可先预览并保存草稿。');
     }
 
+    addEventListener('hkust:language', () => {
+      updateCategory();
+      for (const field of schema.fields) {
+        const control = controls.get(field.name);
+        if (control.validity.customError) control.setCustomValidity(t('请填写{field}', {field: field.label}));
+      }
+    });
   }).catch(() => {
-    fields.textContent = '表单加载失败，请刷新重试。';
+    i18n.text(fields, '表单加载失败，请刷新重试。');
     button.disabled = true;
   });
 })();
