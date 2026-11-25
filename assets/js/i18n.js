@@ -34,7 +34,6 @@
         });
       }
       document.querySelectorAll('.language-toggle').forEach(button => {
-        button.textContent = language() === 'en' ? '中文' : 'EN';
         button.setAttribute('aria-label', language() === 'en' ? 'Switch to Traditional Chinese' : '切換到英文');
       });
       for (const prefix of ['og:', 'twitter:']) {
@@ -43,19 +42,17 @@
       }
       document.querySelector('meta[property="og:locale"]')?.setAttribute('content', language() === 'en' ? 'en_US' : 'zh_HK');
     };
-    const setLanguage = (lang, updateUrl = false) => {
+    const setLanguage = (lang) => {
       document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
       try { localStorage.setItem(storageKey, lang); } catch {}
-      if (updateUrl) {
-        const url = new URL(location.href);
-        url.searchParams.set('lang', lang);
-        history.replaceState(history.state, '', url);
-      }
+      const url = new URL(location.href);
+      url.searchParams.set('lang', lang);
+      history.replaceState(history.state, '', url);
       apply();
       dispatchEvent(new Event('hkust:language'));
     };
     document.querySelectorAll('.language-toggle').forEach(button => {
-      button.addEventListener('click', () => setLanguage(language() === 'en' ? 'zh' : 'en', true));
+      button.addEventListener('click', () => setLanguage(language() === 'en' ? 'zh' : 'en'));
     });
     addEventListener('popstate', () => {
       const requested = new URLSearchParams(location.search).get('lang');

@@ -507,6 +507,7 @@
     const url = new URL(link.href);
     if (url.origin !== location.origin || indexPath(url.pathname) !== indexPath(location.pathname) || url.hash) return;
     event.preventDefault();
+    url.searchParams.set('lang', i18n.language());
     if (url.href === location.href) {
       // Like the personal homepage: clicking the brand on the current home
       // document returns to the top instead of silently swallowing the click.
