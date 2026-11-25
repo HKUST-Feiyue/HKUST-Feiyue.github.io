@@ -27,6 +27,7 @@
       return type.value.trim() || value.value.trim() ? [{type: type.value.trim(), value: value.value.trim()}] : [];
     });
     const values = () => ({...Object.fromEntries(new FormData(form)), contact: readContacts()});
+    let entryPeriod;
     let bodyPreview = null;
     let bodyPreviewButton = null;
     for (const field of schema.fields) {
@@ -292,7 +293,15 @@
         guidance.className = 'field-hint';
         wrapper.append(guidance);
       }
-      fields.append(wrapper);
+      if (field.name === 'year') {
+        entryPeriod = make('div');
+        entryPeriod.className = 'entry-period';
+        entryPeriod.append(wrapper);
+        fields.append(entryPeriod);
+      } else if (field.name === 'term') {
+        entryPeriod.append(wrapper);
+        entryPeriod.append(entryPeriod.querySelector('#year-hint'));
+      } else fields.append(wrapper);
       controls.set(field.name, control);
     }
     window.HKUSTSelect.enhance(fields);
@@ -429,7 +438,7 @@
       back.className = 'article-back';
       previewText.append(back, make('h1', title));
       const byline = make('p');
-      const details = [ui('span', schema.fields.find(field => field.name === 'campus').options.find(item => item.value === data.get('campus')).label), make('span', data.get('year')), make('span', data.get('degree'))];
+      const details = [ui('span', schema.fields.find(field => field.name === 'campus').options.find(item => item.value === data.get('campus')).label), make('span', data.get('year') + ' ' + schema.fields.find(field => field.name === 'term').options.find(option => option.value === data.get('term')).label), make('span', data.get('degree'))];
       details.filter(node => node.textContent).forEach((node, index) => {
         if (index) byline.append(document.createTextNode(' · '));
         byline.append(node);

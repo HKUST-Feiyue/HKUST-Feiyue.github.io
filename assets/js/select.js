@@ -184,6 +184,7 @@
           sync();
         });
         select.addEventListener('selectsync', sync);
+        select.addEventListener('optionschange', rebuild);
         select.addEventListener('invalid', event => {
           event.preventDefault();
           error.hidden = false;

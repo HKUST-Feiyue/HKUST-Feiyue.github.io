@@ -1,3 +1,5 @@
+// Search and article navigation adapted from FuTseYi/FuTseYi (MIT).
+// See personal-site-LICENSE.txt; preserve the handbook's data and palette.
 (async () => {
   const i18n = await window.HKUST_I18N.ready;
   const { t } = i18n;
@@ -52,12 +54,26 @@
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     contents.classList.add('is-enhanced');
     const list = contents.querySelector('ul');
+    const side = document.createElement('nav');
+    side.className = 'article-toc-side';
+    side.setAttribute('aria-label', summary.textContent);
+    side.setAttribute('data-pagefind-ignore', '');
+    const sideTitle = document.createElement('span');
+    sideTitle.className = 'toc-title';
+    i18n.text(sideTitle, '本页目录');
+    side.append(sideTitle, list.cloneNode(true));
+    article.append(side);
+    const sideList = side.querySelector('ul');
     const syncScrollFade = () => {
       list.classList.toggle('can-scroll-up', list.scrollTop > 2);
       list.classList.toggle('can-scroll-down', list.scrollHeight - list.clientHeight - list.scrollTop > 2);
+      sideList.classList.toggle('can-scroll-up', sideList.scrollTop > 2);
+      sideList.classList.toggle('can-scroll-down', sideList.scrollHeight - sideList.clientHeight - sideList.scrollTop > 2);
     };
     list.addEventListener('scroll', syncScrollFade, {passive:true});
     new ResizeObserver(syncScrollFade).observe(list);
+    sideList.addEventListener('scroll', syncScrollFade, {passive:true});
+    new ResizeObserver(syncScrollFade).observe(sideList);
     let closing = false;
     let navigating = false;
     let pendingTarget = null;
@@ -92,8 +108,8 @@
         if (overflow > 0) scrollBy({top: overflow, behavior: 'smooth'});
       }
     });
-    const links = [...contents.querySelectorAll('a[href^="#"]')];
-    const headings = links.map(link => document.getElementById(decodeURIComponent(link.hash.slice(1))));
+    const links = [...contents.querySelectorAll('a[href^="#"]'), ...side.querySelectorAll('a[href^="#"]')];
+    const headings = [...new Set(links.map(link => document.getElementById(decodeURIComponent(link.hash.slice(1)))))];
     let clickedTarget = null;
     const scrollToTarget = target => {
       const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
@@ -126,11 +142,17 @@
         else if (clickedTarget.settled) clickedTarget = null;
         if (clickedTarget) active = headings.indexOf(clickedTarget.target);
       }
-      links.forEach((link, i) => {
-        link.classList.toggle('is-active', i === active);
-        if (i === active) link.setAttribute('aria-current', 'location');
+      links.forEach(link => {
+        const selected = document.getElementById(decodeURIComponent(link.hash.slice(1))) === headings[active];
+        link.classList.toggle('is-active', selected);
+        if (selected) link.setAttribute('aria-current', 'location');
         else link.removeAttribute('aria-current');
       });
+      const selected = side.querySelector('.is-active');
+      if (selected && sideList.scrollHeight > sideList.clientHeight) {
+        const item = selected.getBoundingClientRect(), bounds = sideList.getBoundingClientRect();
+        if (item.top < bounds.top || item.bottom > bounds.bottom) sideList.scrollTop += item.top - bounds.top - (sideList.clientHeight - item.height) / 2;
+      }
     };
     const releaseTarget = () => { clickedTarget = null; update(); };
     window.addEventListener('wheel', releaseTarget, {passive:true});
@@ -223,15 +245,28 @@
     } catch { i18n.text(button, '复制失败'); }
   });
   const archive = document.querySelector('#archive-section');
-  if (!archive) return;
   const nav = document.querySelector('#category-nav');
-  const attributes = ['campus', 'year', 'degree'].map(name => document.querySelector('#' + name + '-filter'));
-  window.HKUSTSelect.enhance(archive);
+  const attributes = ['campus', 'year', 'degree'].map(name => document.querySelector('#' + name + '-filter')).filter(Boolean);
+  const attributeOptions = new Map(attributes.map(control => [control, [...control.options].map(option => option.cloneNode(true))]));
+  if (archive) window.HKUSTSelect.enhance(archive);
 
-  const cards = [...archive.querySelectorAll('.article-item')];
-  const siteRoot = new URL('./', location.href).pathname;
+  const cards = [...(archive?.querySelectorAll('.article-item') || [])];
+  const siteUrl = new URL('../../', document.querySelector('script[src*="assets/js/site.js"]').src);
+  const siteRoot = siteUrl.pathname;
   const indexedPath = path => path.startsWith(siteRoot) ? '/' + path.slice(siteRoot.length) : path;
   const cardByPath = new Map(cards.map(card => [indexedPath(card.querySelector('h3 a').pathname), card]));
+  let cardRequest;
+  const loadCards = () => archive ? Promise.resolve() : cardRequest ??= fetch(siteUrl).then(response => {
+    if (!response.ok) throw new Error('Article catalogue unavailable');
+    return response.text();
+  }).then(source => {
+    const home = new DOMParser().parseFromString(source, 'text/html');
+    home.querySelectorAll('.article-item').forEach(card => {
+      const link = card.querySelector('h3 a');
+      link.href = new URL(link.getAttribute('href'), siteUrl).href;
+      cardByPath.set(indexedPath(link.pathname), card);
+    });
+  });
   const highlight = (element, value, query) => {
     const terms = [...new Set(query.split(/\s+/))].sort((a, b) => b.length - a.length);
     const pattern = new RegExp(terms.map(term => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'giu');
@@ -266,9 +301,11 @@
   const dialog = document.querySelector('#search-dialog');
   const search = document.querySelector('#search');
   const searchOpen = document.querySelector('.search-open');
+  if (!searchOpen) return;
   const searchDesktopParent = searchOpen.parentElement;
   const syncSearchPlacement = () => {
     if (mobile.matches) toggle.before(searchOpen);
+    else if (archive) searchDesktopParent.append(searchOpen);
     else searchDesktopParent.append(searchOpen);
   };
   syncSearchPlacement();
@@ -289,19 +326,19 @@
     await pagefind.options({ excerptLength: 18, excerptEllipsis: '…' });
     return pagefind;
   });
+  dialog.tabIndex = -1;
   const positionSearch = () => {
-    const top = searchOpen.getBoundingClientRect().bottom + 12;
-    dialog.style.setProperty('--search-top', Math.round(top) + 'px');
     if (mobile.matches) {
       const viewport = window.visualViewport;
-      const bottom = (viewport?.offsetTop || 0) + (viewport?.height || innerHeight);
-      dialog.style.setProperty('--search-available', Math.round(Math.max(54, bottom - top - 12)) + 'px');
+      dialog.style.setProperty('--search-viewport-height', Math.round(viewport?.height || innerHeight) + 'px');
+      dialog.style.top = (viewport?.offsetTop || 0) + 'px';
       return;
     }
-    dialog.style.removeProperty('--search-available');
+    dialog.style.removeProperty('--search-viewport-height');
+    dialog.style.removeProperty('top');
   };
   const openSearch = () => {
-    if (archive.hidden) return;
+    if (archive?.hidden) return;
     positionSearch();
     dialog.showModal();
     search.focus({preventScroll:true});
@@ -318,7 +355,7 @@
     delete results.dataset.i18n;
     results.replaceChildren();
     syncScrollHint();
-    if (!archive.hidden) searchOpen.focus({preventScroll:true});
+    if (!archive?.hidden) searchOpen.focus({preventScroll:true});
   });
   dialog.querySelector('.search-close').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
@@ -341,6 +378,7 @@
     if (!query) return;
     i18n.text(results, '正在搜索…');
     try {
+      await loadCards();
       const pagefind = await loadSearch();
       const found = await pagefind.debouncedSearch(query);
       if (id !== requestId) return;
@@ -410,6 +448,7 @@
       console.error('Pagefind search failed', error);
     }
   });
+  if (!archive) return;
   const renderView = () => {
     if (dialog.open) dialog.close();
     const params = new URLSearchParams(location.search);
@@ -429,9 +468,23 @@
     document.querySelector('#stories-heading').textContent = current ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
     document.querySelector('#category-intro').textContent = current ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
     for (const control of attributes) {
-      const value = params.get(control.id.replace('-filter', '')) || 'all';
+      const key = control.id.replace('-filter', '');
+      const available = new Set(cards.filter(card => activeCategory === 'all' || card.dataset.category === activeCategory).map(card => card.dataset[key]));
+      control.replaceChildren(...attributeOptions.get(control)
+        .filter(option => option.value === 'all' || available.has(option.value))
+        .map(option => {
+          const copy = option.cloneNode(true);
+          copy.textContent = t(copy.dataset.i18n || copy.textContent);
+          return copy;
+        }));
+      const value = params.get(key) || 'all';
       control.value = [...control.options].some(option => option.value === value) ? value : 'all';
+      if (control.value === 'all') params.delete(key);
+      control.dispatchEvent(new Event('optionschange'));
     }
+    const normalized = new URL(location.href);
+    normalized.search = params.toString();
+    if (normalized.href !== location.href) history.replaceState(null, '', normalized);
     attributes.forEach(control => control.dispatchEvent(new Event('selectsync')));
     renderFilters();
   };

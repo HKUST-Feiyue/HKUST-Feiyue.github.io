@@ -66,7 +66,24 @@
       "inputMode": "numeric",
       "pattern": "[0-9]{4}",
       "placeholder": "例如 2026",
-      "hint": "填写四位入学年份，不是毕业年份。"
+      "hint": "按实际入学公历年份填写，不是学年或毕业年份。"
+    },
+    {
+      "name": "term",
+      "label": "入学季",
+      "type": "select",
+      "required": true,
+      "placeholder": "请选择",
+      "options": [
+        {
+          "value": "fall",
+          "label": "Fall"
+        },
+        {
+          "value": "spring",
+          "label": "Spring"
+        }
+      ]
     },
     {
       "name": "degree",
