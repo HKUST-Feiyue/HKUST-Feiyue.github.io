@@ -76,67 +76,83 @@
       "options": [
         {
           "value": "BSc",
-          "label": "BSc"
+          "label": "BSc",
+          "group": "本科"
         },
         {
           "value": "BEng",
-          "label": "BEng"
+          "label": "BEng",
+          "group": "本科"
         },
         {
           "value": "BBA",
-          "label": "BBA"
+          "label": "BBA",
+          "group": "本科"
         },
         {
           "value": "MSc",
-          "label": "MSc"
+          "label": "MSc",
+          "group": "授课型研究生"
         },
         {
           "value": "MA",
-          "label": "MA"
+          "label": "MA",
+          "group": "授课型研究生"
         },
         {
           "value": "MEng",
-          "label": "MEng"
+          "label": "MEng",
+          "group": "授课型研究生"
         },
         {
           "value": "MFA",
-          "label": "MFA"
+          "label": "MFA",
+          "group": "授课型研究生"
         },
         {
           "value": "MBA",
-          "label": "MBA"
+          "label": "MBA",
+          "group": "授课型研究生"
         },
         {
           "value": "EMBA",
-          "label": "EMBA"
+          "label": "EMBA",
+          "group": "授课型研究生"
         },
         {
           "value": "MPP",
-          "label": "MPP"
+          "label": "MPP",
+          "group": "授课型研究生"
         },
         {
           "value": "MPM",
-          "label": "MPM"
+          "label": "MPM",
+          "group": "授课型研究生"
         },
         {
           "value": "DBA",
-          "label": "DBA"
+          "label": "DBA",
+          "group": "授课型研究生"
         },
         {
           "value": "PGD",
-          "label": "PGD"
+          "label": "PGD",
+          "group": "授课型研究生"
         },
         {
           "value": "MPhil",
-          "label": "MPhil"
+          "label": "MPhil",
+          "group": "研究型研究生"
         },
         {
           "value": "PhD",
-          "label": "PhD"
+          "label": "PhD",
+          "group": "研究型研究生"
         },
         {
           "value": "Other",
-          "label": "Other"
+          "label": "Other",
+          "group": "其他"
         }
       ],
       "placeholder": "请选择学位类型"

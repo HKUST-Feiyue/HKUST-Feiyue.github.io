@@ -5,7 +5,7 @@
     if (!response.ok) throw new Error('Could not load translations');
     return response.json();
   }).then(translations => {
-    const language = () => document.documentElement.lang === 'zh-Hant' ? 'zh' : document.documentElement.lang === 'zh-CN' ? 'zh-CN' : 'en';
+    const language = () => document.documentElement.lang === 'zh-Hant' ? 'zh' : 'en';
     const t = (key, params = {}) => {
       const dictionary = translations[language()];
       const value = dictionary[key] ?? key;
@@ -28,22 +28,22 @@
       root.querySelectorAll('[data-i18n]').forEach(node => {
         node.textContent = t(node.dataset.i18n, JSON.parse(node.dataset.i18nParams || '{}'));
       });
-      for (const name of ['aria-label', 'title', 'placeholder', 'content']) {
+      for (const name of ['aria-label', 'title', 'placeholder', 'content', 'label']) {
         root.querySelectorAll('[data-i18n-' + name + ']').forEach(node => {
           node.setAttribute(name, t(node.getAttribute('data-i18n-' + name)));
         });
       }
       document.querySelectorAll('.language-toggle').forEach(button => {
-        button.setAttribute('aria-label', '简体 / 繁體 / English');
+        button.setAttribute('aria-label', language() === 'en' ? 'Switch to Traditional Chinese' : '切換到英文');
       });
       for (const prefix of ['og:', 'twitter:']) {
         document.querySelector(`meta[${prefix === 'og:' ? 'property' : 'name'}="${prefix}title"]`)?.setAttribute('content', document.title);
         document.querySelector(`meta[${prefix === 'og:' ? 'property' : 'name'}="${prefix}description"]`)?.setAttribute('content', document.querySelector('meta[name="description"]').content);
       }
-      document.querySelector('meta[property="og:locale"]')?.setAttribute('content', language() === 'en' ? 'en_US' : language() === 'zh' ? 'zh_HK' : 'zh_CN');
+      document.querySelector('meta[property="og:locale"]')?.setAttribute('content', language() === 'en' ? 'en_US' : 'zh_HK');
     };
     const setLanguage = (lang) => {
-      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : lang === 'zh-CN' ? 'zh-CN' : 'en';
+      document.documentElement.lang = lang === 'zh' ? 'zh-Hant' : 'en';
       try { localStorage.setItem(storageKey, lang); } catch {}
       const url = new URL(location.href);
       url.searchParams.set('lang', lang);
@@ -52,14 +52,14 @@
       dispatchEvent(new Event('hkust:language'));
     };
     document.querySelectorAll('.language-toggle').forEach(button => {
-      button.addEventListener('click', () => setLanguage(['en', 'zh', 'zh-CN'][(['en', 'zh', 'zh-CN'].indexOf(language()) + 1) % 3]));
+      button.addEventListener('click', () => setLanguage(language() === 'en' ? 'zh' : 'en'));
     });
     addEventListener('popstate', () => {
       const requested = new URLSearchParams(location.search).get('lang');
-      if (['zh', 'zh-CN', 'en'].includes(requested)) setLanguage(requested);
+      if (['zh', 'en'].includes(requested)) setLanguage(requested);
     });
     addEventListener('storage', event => {
-      if (event.key === storageKey && ['zh', 'zh-CN', 'en'].includes(event.newValue)) setLanguage(event.newValue);
+      if (event.key === storageKey && ['zh', 'en'].includes(event.newValue)) setLanguage(event.newValue);
     });
     setLanguage(language());
     return { t, text, attribute, apply, language };

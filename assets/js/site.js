@@ -225,90 +225,8 @@
   const archive = document.querySelector('#archive-section');
   if (!archive) return;
   const nav = document.querySelector('#category-nav');
-  const year = document.querySelector('#year-filter');
   const attributes = ['campus', 'year', 'degree'].map(name => document.querySelector('#' + name + '-filter'));
-  // Native popover gives a fully styled menu and browser-managed light dismiss,
-  // Escape, focus order and top-layer positioning. The select is the fallback.
-  const yearTrigger = document.querySelector('#year-trigger');
-  const yearMenu = document.querySelector('#year-options');
-  if (yearMenu && typeof yearMenu.showPopover === 'function') {
-    year.parentElement.classList.add('has-popover');
-    yearTrigger.hidden = false;
-    const options = [...year.options];
-    const updateMenu = () => {
-      document.querySelector('#year-label').textContent = year.selectedOptions[0]?.textContent || t('全部年份');
-      yearMenu.querySelectorAll('button').forEach(option => {
-        const selected = option.dataset.value === year.value;
-        option.setAttribute('aria-pressed', String(selected));
-        option.classList.toggle('is-selected', selected);
-      });
-    };
-    for (const option of options) {
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'year-option';
-      item.dataset.value = option.value;
-      item.textContent = option.textContent;
-      if (option.value === 'all') i18n.text(item, '全部年份');
-      item.addEventListener('click', () => {
-        year.value = item.dataset.value;
-        year.dispatchEvent(new Event('change', {bubbles:true}));
-        yearMenu.hidePopover();
-        yearTrigger.focus();
-      });
-      yearMenu.append(item);
-    }
-    const positionMenu = () => {
-      const rect = yearTrigger.getBoundingClientRect();
-      const width = Math.max(rect.width, 108);
-      const spaceBelow = innerHeight - rect.bottom - 14;
-      const below = spaceBelow >= 130 || spaceBelow >= rect.top - 14;
-      const room = Math.max(40, below ? spaceBelow : rect.top - 14);
-      yearMenu.style.width = width + 'px';
-      yearMenu.style.maxHeight = Math.min(280, room) + 'px';
-      yearMenu.style.left = Math.max(8, Math.min(rect.left, innerWidth - width - 8)) + 'px';
-      yearMenu.style.top = (below ? rect.bottom + 6 :
-        Math.max(8, rect.top - Math.min(yearMenu.scrollHeight || 280, 280, room) - 6)) + 'px';
-    };
-    yearMenu.addEventListener('beforetoggle', event => {
-      if (event.newState === 'open') positionMenu();
-    });
-    window.addEventListener('resize', () => {
-      if (yearMenu.matches(':popover-open')) positionMenu();
-    }, {passive:true});
-    window.addEventListener('scroll', () => {
-      if (yearMenu.matches(':popover-open')) positionMenu();
-    }, {passive:true});
-    yearTrigger.addEventListener('click', () => {
-      requestAnimationFrame(() => {
-        if (yearMenu.matches(':popover-open')) yearMenu.querySelector('.is-selected')?.focus();
-      });
-    });
-    yearTrigger.addEventListener('keydown', event => {
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        yearMenu.showPopover();
-        const options = [...yearMenu.querySelectorAll('button')];
-        const current = options.findIndex(item => item.dataset.value === year.value);
-        options[(current + (event.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length].focus();
-      }
-    });
-    yearMenu.addEventListener('keydown', event => {
-      const items = [...yearMenu.querySelectorAll('button')];
-      const index = items.indexOf(document.activeElement);
-      let target = index;
-      if (event.key === 'ArrowDown') target = (index + 1) % items.length;
-      else if (event.key === 'ArrowUp') target = (index + items.length - 1) % items.length;
-      else if (event.key === 'Home') target = 0;
-      else if (event.key === 'End') target = items.length - 1;
-      else return;
-      event.preventDefault();
-      items[target].focus();
-    });
-    year.addEventListener('change', updateMenu);
-    year.addEventListener('yearsync', updateMenu);
-    updateMenu();
-  }
+  window.HKUSTSelect.enhance(archive);
 
   const cards = [...archive.querySelectorAll('.article-item')];
   const siteRoot = new URL('./', location.href).pathname;
@@ -514,7 +432,7 @@
       const value = params.get(control.id.replace('-filter', '')) || 'all';
       control.value = [...control.options].some(option => option.value === value) ? value : 'all';
     }
-    year.dispatchEvent(new Event('yearsync'));
+    attributes.forEach(control => control.dispatchEvent(new Event('selectsync')));
     renderFilters();
   };
   const saveFilters = () => {
@@ -526,7 +444,7 @@
       else url.searchParams.set(key, control.value);
     }
     history.pushState(null, '', url);
-    year.dispatchEvent(new Event('yearsync'));
+    attributes.forEach(control => control.dispatchEvent(new Event('selectsync')));
     renderFilters();
   };
   attributes.forEach(control => control.addEventListener('change', saveFilters));
@@ -580,7 +498,7 @@
       ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
     document.querySelector('#category-intro').textContent = current && current.dataset.category !== 'all'
       ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
-    year.dispatchEvent(new Event('yearsync'));
+    attributes.forEach(control => control.dispatchEvent(new Event('selectsync')));
     renderFilters();
   });
 })();

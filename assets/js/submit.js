@@ -85,10 +85,19 @@
         const placeholder = ui('option', field.placeholder);
         placeholder.value = '';
         control.append(placeholder);
+        const groups = new Map();
         for (const item of (field.name === 'category' ? schema.categories.map(item => ({value:item.id, label:item.label})) : field.options)) {
           const option = ui('option', item.label);
           option.value = item.value;
-          control.append(option);
+          if (item.group) {
+            if (!groups.has(item.group)) {
+              const group = make('optgroup');
+              i18n.attribute(group, 'label', item.group);
+              groups.set(item.group, group);
+              control.append(group);
+            }
+            groups.get(item.group).append(option);
+          } else control.append(option);
         }
       }
       if (field.name === 'category') category = control;
@@ -247,6 +256,7 @@
       fields.append(wrapper);
       controls.set(field.name, control);
     }
+    window.HKUSTSelect.enhance(fields);
     // Prefer CSS field-sizing: content; fallback to scrollHeight for WebKit
     // and older browsers, without a second draggable overlay on textareas.
     for (const control of controls.values()) {
@@ -287,6 +297,7 @@
       }
     } catch {}
     updateCategory();
+    controls.forEach(control => control.dispatchEvent(new Event('selectsync')));
     const save = () => {
       hidePreview();
       if (bodyPreview && !bodyPreview.hidden) renderMarkdown(controls.get('body').value, bodyPreview);
@@ -401,6 +412,7 @@
           const line = make('p', row.type + '：' + row.value + ' ');
           const copy = ui('button', '复制');
           copy.type = 'button';
+          copy.className = 'copy-contact';
           copy.dataset.copy = row.value;
           line.append(copy);
           aside.append(line);
@@ -438,7 +450,7 @@
           widgetId = window.turnstile.render(captchaHost, {
             sitekey: config.turnstileSiteKey,
             action: 'hkust_feiyue_submit',
-            language: i18n.language() === 'en' ? 'en' : i18n.language() === 'zh' ? 'zh-TW' : 'zh-CN',
+            language: i18n.language() === 'zh' ? 'zh-TW' : 'en',
             callback: () => {
               if (!submitting) {
                 submitButton.disabled = false;
