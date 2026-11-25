@@ -118,7 +118,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .sidebar-bottom {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   margin-top: auto;
   padding: 12px 0 9px;
   gap: 8px;
@@ -1227,6 +1227,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   min-width:0;
 }
 
+.campus-field { border: 0; padding: 0; min-width: 0; }
+.campus-field legend { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.campus-options { display: flex; flex-wrap: wrap; gap: 10px; }
+.campus-choice { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--control-radius); background: var(--surface); cursor: pointer; }
+.campus-choice:has(:checked) { border-color: var(--accent); background: var(--soft); }
+.campus-choice input { width: 16px; height: 16px; padding: 0; margin: 0; accent-color: var(--accent); }
+
 .contact-fields legend {
   font-weight:600;
   margin-bottom:12px;
@@ -1640,6 +1647,7 @@ proportions; no composition, mask, crop or duplicate seal. */
   top: -140px;
   font-family: var(--serif);
   font-style: italic;
+  font-synthesis: style;
   transform: skewX(-7deg);
   transform-origin: left center;
   font-weight: 720;
@@ -1738,15 +1746,11 @@ proportions; no composition, mask, crop or duplicate seal. */
   display: inline-block;
   font-family: var(--serif);
   font-style: italic;
+  font-synthesis: style;
   transform: skewX(-7deg);
   font-size: 17px;
   font-weight: 700;
   letter-spacing: .035em;
-}
-
-:lang(zh-Hant) :is(.page.is-home .home-intro h1, .footer-brand-name) {
-  font-style: normal;
-  transform: none;
 }
 
 .footer-brand p {
@@ -1832,6 +1836,11 @@ proportions; no composition, mask, crop or duplicate seal. */
   --mobile-header-height: 72px;
   }
 
+  html {
+  overscroll-behavior-y: none;
+  scroll-padding-top: calc(var(--mobile-header-height) + 24px);
+  }
+
   .shell {
   display: block;
   }
@@ -1839,11 +1848,14 @@ proportions; no composition, mask, crop or duplicate seal. */
   .page {
   width: 100%;
   margin-left: 0;
+  padding-top: var(--mobile-header-height);
   }
 
   .page .topbar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
   display: flex;
   align-items: center;
@@ -1965,7 +1977,7 @@ proportions; no composition, mask, crop or duplicate seal. */
   }
 
   .sidebar-bottom {
-  justify-content: flex-start;
+  justify-content: center;
   margin-top: 12px;
   padding-top: 16px;
   }

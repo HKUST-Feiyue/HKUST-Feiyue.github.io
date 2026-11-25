@@ -1,10 +1,12 @@
 (() => {
   const dictionaryUrl = new URL('../../data/i18n.json', document.currentScript.src);
   const storageKey = 'hkust-feiyue-lang';
-  const ready = fetch(dictionaryUrl).then(response => {
+  const embedded = document.querySelector('#site-translations');
+  const dictionary = embedded ? Promise.resolve(JSON.parse(embedded.textContent)) : fetch(dictionaryUrl).then(response => {
     if (!response.ok) throw new Error('Could not load translations');
     return response.json();
-  }).then(translations => {
+  });
+  const ready = dictionary.then(translations => {
     const language = () => document.documentElement.lang === 'zh-Hant' ? 'zh' : 'en';
     const t = (key, params = {}) => {
       const dictionary = translations[language()];
@@ -62,7 +64,12 @@
       if (event.key === storageKey && ['zh', 'en'].includes(event.newValue)) setLanguage(event.newValue);
     });
     setLanguage(language());
+    delete document.documentElement.dataset.languagePending;
     return { t, text, attribute, apply, language };
+  }).catch(error => {
+    document.documentElement.lang = 'en';
+    delete document.documentElement.dataset.languagePending;
+    throw error;
   });
   window.HKUST_I18N = { ready };
 })();

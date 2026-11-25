@@ -30,6 +30,45 @@
     let bodyPreview = null;
     let bodyPreviewButton = null;
     for (const field of schema.fields) {
+      if (field.name === 'campus') {
+        const section = make('fieldset');
+        section.className = 'field campus-field';
+        const legend = make('legend');
+        legend.append(ui('span', field.label), make('span', ' *'));
+        const control = make('input');
+        control.type = 'hidden';
+        control.id = 'campus';
+        const choices = make('div');
+        choices.className = 'campus-options';
+        for (const option of field.options) {
+          const label = make('label');
+          label.className = 'campus-choice';
+          const radio = make('input');
+          radio.type = 'radio';
+          radio.name = 'campus';
+          radio.value = option.value;
+          radio.required = true;
+          radio.addEventListener('input', () => {
+            control.value = radio.value;
+            choices.querySelectorAll('input').forEach(input => input.setCustomValidity(''));
+          });
+          label.append(radio, ui('span', option.label));
+          choices.append(label);
+        }
+        const sync = () => choices.querySelectorAll('input').forEach(radio => {
+          radio.checked = radio.value === control.value;
+        });
+        control.addEventListener('selectsync', sync);
+        form.addEventListener('reset', () => requestAnimationFrame(() => {
+          control.value = '';
+          choices.querySelectorAll('input').forEach(input => input.setCustomValidity(''));
+          sync();
+        }));
+        section.append(legend, control, choices);
+        fields.append(section);
+        controls.set(field.name, control);
+        continue;
+      }
       if (field.name === 'contact') {
         const section = make('fieldset');
         section.className = 'field contact-fields';
@@ -371,7 +410,8 @@
     const validateForm = () => {
       for (const field of schema.fields.filter(field => field.name !== 'contact')) {
         const control = controls.get(field.name);
-        control.setCustomValidity(field.required && !control.value.trim() ? t('请填写{field}', {field: field.label}) : '');
+        const target = field.name === 'campus' ? form.querySelector('[name=campus]') : control;
+        target.setCustomValidity(field.required && !control.value.trim() ? t('请填写{field}', {field: field.label}) : '');
       }
       readContacts();
       return form.reportValidity();
@@ -517,7 +557,8 @@
       readContacts();
       for (const field of schema.fields.filter(field => field.name !== 'contact')) {
         const control = controls.get(field.name);
-        if (control.validity.customError) control.setCustomValidity(t('请填写{field}', {field: field.label}));
+        const target = field.name === 'campus' ? form.querySelector('[name=campus]') : control;
+        if (target.validity.customError) target.setCustomValidity(t('请填写{field}', {field: field.label}));
       }
     });
   }).catch(() => {

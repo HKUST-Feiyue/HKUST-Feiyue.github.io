@@ -43,7 +43,7 @@
     {
       "name": "campus",
       "label": "校区",
-      "type": "select",
+      "type": "radio",
       "required": true,
       "options": [
         {

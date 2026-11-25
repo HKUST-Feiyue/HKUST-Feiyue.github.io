@@ -8,4 +8,5 @@
     if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
   } catch {}
   document.documentElement.lang = language === 'zh' ? 'zh-Hant' : 'en';
+  if (language === 'zh') document.documentElement.dataset.languagePending = '';
 })();

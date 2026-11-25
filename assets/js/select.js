@@ -96,7 +96,7 @@
           options = [];
           const groups = new Map();
           for (const option of select.options) {
-            if (option.disabled) continue;
+            if (option.disabled || option.value === '') continue;
             const group = option.parentElement;
             if (group.tagName === 'OPTGROUP' && !groups.has(group)) {
               const section = document.createElement('div');
@@ -139,9 +139,16 @@
           position();
           activate(Math.max(0, options.findIndex(option => option.dataset.value === select.value)));
         };
-        trigger.addEventListener('click', () => {
+        // Light dismissal may close the popup between pointerdown and click.
+        let pointerOpen = null;
+        trigger.addEventListener('pointerdown', () => { pointerOpen = isOpen(); });
+        trigger.addEventListener('pointercancel', () => { pointerOpen = null; });
+        trigger.addEventListener('click', event => {
+          event.preventDefault();
+          const wasOpen = pointerOpen ?? isOpen();
+          pointerOpen = null;
           trigger.focus({preventScroll: true});
-          if (isOpen()) close();
+          if (wasOpen) close();
           else open();
         });
         trigger.addEventListener('keydown', event => {
@@ -155,7 +162,7 @@
             if ((key === 'Enter' || key === ' ') && opened) commit();
             else if (key === 'Home') activate(0);
             else if (key === 'End') activate(options.length - 1);
-            else if (key === 'ArrowDown') activate((active + 1) % options.length);
+            else if (key === 'ArrowDown' && (opened || select.value !== '')) activate((active + 1) % options.length);
             else if (key === 'ArrowUp') activate((active + options.length - 1) % options.length);
           } else if (key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
             event.preventDefault();
