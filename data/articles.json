@@ -1,74 +1,72 @@
 [
   {
     "demo": true,
-    "title": "某智能製造企業 · 項目運營方向",
+    "title": "演示作者 5 · 示例项目 5",
+    "category": "entrepreneurship",
+    "author": "演示作者 5",
+    "year": "2024",
+    "campus": "hk",
+    "degree": "MBA",
+    "field": "Business",
+    "published_at": "2026-11-24T00:00:00Z",
+    "destination": "示例项目 5",
+    "excerpt": "这是一篇虚构的创新创业演示文章，不是真实投稿；入学年份为单独设定的演示数据。 准备过程 从公开资料了解项目要求，整理时间安排和需要准备的材料。 实践与反思 记录具体行动、遇到的问题与思考，帮助读者理解经验的背景。 经验与建议 请以官方最新信息为准，并结合自己的目标作出判断。",
+    "url": "articles/demo-entrepreneurship.html"
+  },
+  {
+    "demo": true,
+    "title": "演示作者 4 · 示例项目 4",
+    "category": "exchange",
+    "author": "演示作者 4",
+    "year": "2023",
+    "campus": "gz",
+    "degree": "BEng",
+    "field": "Data Science",
+    "published_at": "2026-11-23T00:00:00Z",
+    "destination": "示例项目 4",
+    "excerpt": "这是一篇虚构的交流访学演示文章，不是真实投稿；入学年份为单独设定的演示数据。 准备过程 从公开资料了解项目要求，整理时间安排和需要准备的材料。 实践与反思 记录具体行动、遇到的问题与思考，帮助读者理解经验的背景。 经验与建议 请以官方最新信息为准，并结合自己的目标作出判断。",
+    "url": "articles/demo-exchange.html"
+  },
+  {
+    "demo": true,
+    "title": "演示作者 3 · 示例项目 3",
     "category": "career",
-    "author": "周同學",
-    "year": "2026",
-    "college": "某學院",
-    "major": "某專業",
-    "program": "項目運營方向",
-    "destination": "某智能製造企業",
-    "excerpt": "從第一版簡歷沒人回覆，到逐漸學會用項目細節解釋自己的能力，我的求職準備經歷了幾次轉彎。",
-    "tags": [
-      "實習",
-      "簡歷",
-      "面試"
-    ],
+    "author": "演示作者 3",
+    "year": "2022",
+    "campus": "hk",
+    "degree": "MSc",
+    "field": "Engineering",
+    "published_at": "2026-11-22T00:00:00Z",
+    "destination": "示例项目 3",
+    "excerpt": "这是一篇虚构的职业发展演示文章，不是真实投稿；入学年份为单独设定的演示数据。 准备过程 从公开资料了解项目要求，整理时间安排和需要准备的材料。 实践与反思 记录具体行动、遇到的问题与思考，帮助读者理解经验的背景。 经验与建议 请以官方最新信息为准，并结合自己的目标作出判断。",
     "url": "articles/demo-career.html"
   },
   {
     "demo": true,
-    "title": "香港某高校 · 理工類碩士項目",
-    "category": "overseas",
-    "author": "陳同學",
-    "year": "2026",
-    "college": "某學院",
-    "major": "某專業",
-    "program": "理工類碩士項目",
-    "destination": "香港某高校",
-    "excerpt": "申請季裏最難的不是填網申，而是把課程、項目和未來打算整理成一條能説清楚的主線。",
-    "tags": [
-      "選校",
-      "文書",
-      "時間規劃"
-    ],
-    "url": "articles/demo-overseas.html"
+    "title": "演示作者 2 · 示例项目 2",
+    "category": "research",
+    "author": "演示作者 2",
+    "year": "2021",
+    "campus": "gz",
+    "degree": "MPhil",
+    "field": "Artificial Intelligence",
+    "published_at": "2026-11-21T00:00:00Z",
+    "destination": "示例项目 2",
+    "excerpt": "这是一篇虚构的学术科研演示文章，不是真实投稿；入学年份为单独设定的演示数据。 准备过程 从公开资料了解项目要求，整理时间安排和需要准备的材料。 实践与反思 记录具体行动、遇到的问题与思考，帮助读者理解经验的背景。 经验与建议 请以官方最新信息为准，并结合自己的目标作出判断。",
+    "url": "articles/demo-research.html"
   },
   {
     "demo": true,
-    "title": "某理工類高校 · 計算機科學與工程相關專業",
-    "category": "kaoyan",
-    "author": "林同學",
-    "year": "2026",
-    "college": "某學院",
-    "major": "某專業",
-    "program": "計算機科學與工程相關專業",
-    "destination": "某理工類高校",
-    "excerpt": "從擇校猶豫到複習計劃落地，我最有感觸的是把信息焦慮變成每週都能執行的小任務。",
-    "tags": [
-      "擇校",
-      "初試",
-      "複試"
-    ],
-    "url": "articles/demo-postgraduate.html"
-  },
-  {
-    "demo": true,
-    "title": "某地事業單位招錄方向 · 綜合管理崗位",
-    "category": "public",
-    "author": "許同學",
-    "year": "2026",
-    "college": "某學院",
-    "major": "某專業",
-    "program": "綜合管理崗位",
-    "destination": "某地事業單位招錄方向",
-    "excerpt": "報名條件、筆試節奏和麪試表達，我最想提醒的是先看清崗位，再決定如何投入時間。",
-    "tags": [
-      "選崗",
-      "筆試",
-      "面試"
-    ],
-    "url": "articles/demo-public.html"
+    "title": "演示作者 1 · 示例项目 1",
+    "category": "further-studies",
+    "author": "演示作者 1",
+    "year": "2020",
+    "campus": "hk",
+    "degree": "BSc",
+    "field": "Computer Science",
+    "published_at": "2026-11-20T00:00:00Z",
+    "destination": "示例项目 1",
+    "excerpt": "这是一篇虚构的升学深造演示文章，不是真实投稿；入学年份为单独设定的演示数据。 准备过程 从公开资料了解项目要求，整理时间安排和需要准备的材料。 实践与反思 记录具体行动、遇到的问题与思考，帮助读者理解经验的背景。 经验与建议 请以官方最新信息为准，并结合自己的目标作出判断。",
+    "url": "articles/demo-further-studies.html"
   }
 ]

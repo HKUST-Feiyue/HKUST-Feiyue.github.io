@@ -214,10 +214,19 @@
   });
   setMenu(false);
 
+  document.addEventListener('click', async event => {
+    const button = event.target.closest('button[data-copy]');
+    if (!button) return;
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      i18n.text(button, '已复制');
+    } catch { i18n.text(button, '复制失败'); }
+  });
   const archive = document.querySelector('#archive-section');
   if (!archive) return;
   const nav = document.querySelector('#category-nav');
   const year = document.querySelector('#year-filter');
+  const attributes = ['campus', 'year', 'degree'].map(name => document.querySelector('#' + name + '-filter'));
   // Native popover gives a fully styled menu and browser-managed light dismiss,
   // Escape, focus order and top-layer positioning. The select is the fallback.
   const yearTrigger = document.querySelector('#year-trigger');
@@ -227,7 +236,7 @@
     yearTrigger.hidden = false;
     const options = [...year.options];
     const updateMenu = () => {
-      document.querySelector('#year-label').textContent = year.selectedOptions[0]?.textContent || t('全部届次');
+      document.querySelector('#year-label').textContent = year.selectedOptions[0]?.textContent || t('全部年份');
       yearMenu.querySelectorAll('button').forEach(option => {
         const selected = option.dataset.value === year.value;
         option.setAttribute('aria-pressed', String(selected));
@@ -240,7 +249,7 @@
       item.className = 'year-option';
       item.dataset.value = option.value;
       item.textContent = option.textContent;
-      if (option.value === 'all') i18n.text(item, '全部届次');
+      if (option.value === 'all') i18n.text(item, '全部年份');
       item.addEventListener('click', () => {
         year.value = item.dataset.value;
         year.dispatchEvent(new Event('change', {bubbles:true}));
@@ -252,11 +261,14 @@
     const positionMenu = () => {
       const rect = yearTrigger.getBoundingClientRect();
       const width = Math.max(rect.width, 108);
-      const spaceBelow = innerHeight - rect.bottom;
+      const spaceBelow = innerHeight - rect.bottom - 14;
+      const below = spaceBelow >= 130 || spaceBelow >= rect.top - 14;
+      const room = Math.max(40, below ? spaceBelow : rect.top - 14);
       yearMenu.style.width = width + 'px';
+      yearMenu.style.maxHeight = Math.min(280, room) + 'px';
       yearMenu.style.left = Math.max(8, Math.min(rect.left, innerWidth - width - 8)) + 'px';
-      yearMenu.style.top = (spaceBelow >= 130 ? rect.bottom + 6 :
-        Math.max(8, rect.top - Math.min(yearMenu.scrollHeight || 150, 230) - 6)) + 'px';
+      yearMenu.style.top = (below ? rect.bottom + 6 :
+        Math.max(8, rect.top - Math.min(yearMenu.scrollHeight || 280, 280, room) - 6)) + 'px';
     };
     yearMenu.addEventListener('beforetoggle', event => {
       if (event.newState === 'open') positionMenu();
@@ -323,7 +335,7 @@
     let hasDemo = false;
     for (const card of cards) {
       const visible = (activeCategory === 'all' || card.dataset.category === activeCategory) &&
-        (year.value === 'all' || card.dataset.year === year.value);
+        attributes.every(control => control.value === 'all' || card.dataset[control.id.replace('-filter', '')] === control.value);
       card.hidden = !visible;
       if (visible) {
         visibleCount++;
@@ -423,7 +435,7 @@
       const matches = [...cardByPath].flatMap(([path, card]) => {
         if (card.hidden) return [];
         const title = card.querySelector('h3 a').textContent;
-        const byline = card.querySelector('.article-meta').textContent;
+        const byline = card.querySelector('.article-meta').textContent + ' · ' + card.querySelector('.article-field').textContent;
         const titleMatch = normalize(title).includes(titleQuery);
         const bylineMatch = normalize(byline).includes(titleQuery);
         const body = bodyMatches.get(path);
@@ -443,6 +455,12 @@
         title.className = 'search-title';
         highlight(title, match.title, query);
         link.append(title);
+        for (const selector of ['.article-meta', '.article-field']) {
+          const metadata = document.createElement('span');
+          metadata.className = 'search-match';
+          metadata.textContent = match.card.querySelector(selector).textContent;
+          link.append(metadata);
+        }
         const page = match.body?.page;
         const position = exactCjkPhrase ? (page?.content || '').indexOf(query) : -1;
         if (match.bylineMatch || position >= 0 || page?.excerpt?.includes('<mark>')) {
@@ -478,7 +496,7 @@
     if (dialog.open) dialog.close();
     const params = new URLSearchParams(location.search);
     const selected = params.get('category');
-    const isHome = !selected && params.get('view') !== 'all';
+    const isHome = !selected && params.get('view') !== 'all' && !attributes.some(control => params.has(control.id.replace('-filter', '')));
     document.documentElement.dataset.view = isHome ? 'home' : 'archive';
     document.querySelector('.page').classList.toggle('is-home', isHome);
     document.querySelector('#home-intro').hidden = !isHome;
@@ -492,13 +510,29 @@
     active?.setAttribute('aria-current', 'page');
     document.querySelector('#stories-heading').textContent = current ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
     document.querySelector('#category-intro').textContent = current ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
-    year.value = history.state?.year || 'all';
+    for (const control of attributes) {
+      const value = params.get(control.id.replace('-filter', '')) || 'all';
+      control.value = [...control.options].some(option => option.value === value) ? value : 'all';
+    }
     year.dispatchEvent(new Event('yearsync'));
     renderFilters();
   };
-  year.addEventListener('change', () => {
-    history.replaceState({...history.state, year: year.value}, '');
+  const saveFilters = () => {
+    const url = new URL(location.href);
+    if (!url.searchParams.has('category')) url.searchParams.set('view', 'all');
+    for (const control of attributes) {
+      const key = control.id.replace('-filter', '');
+      if (control.value === 'all') url.searchParams.delete(key);
+      else url.searchParams.set(key, control.value);
+    }
+    history.pushState(null, '', url);
+    year.dispatchEvent(new Event('yearsync'));
     renderFilters();
+  };
+  attributes.forEach(control => control.addEventListener('change', saveFilters));
+  document.querySelector('#reset-filters').addEventListener('click', () => {
+    attributes.forEach(control => { control.value = 'all'; });
+    saveFilters();
   });
   const indexPath = path => path.replace(/index\.html$/, '');
   document.addEventListener('click', event => {
@@ -520,7 +554,10 @@
       }
       return;
     }
-    history.pushState({year: 'all'}, '', url);
+    for (const control of attributes) {
+      if (control.value !== 'all') url.searchParams.set(control.id.replace('-filter', ''), control.value);
+    }
+    history.pushState(null, '', url);
     const update = () => {
       renderView();
       window.scrollTo(0, 0);

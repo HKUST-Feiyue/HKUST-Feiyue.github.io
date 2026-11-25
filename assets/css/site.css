@@ -217,6 +217,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   margin-left: auto;
   max-width: 100%;
   flex-direction: column;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
 }
@@ -1155,7 +1156,88 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .community-links a, .community-contact a { color: var(--accent); font-size: 14px; }
 .community-links a:hover, .community-contact a:hover { text-decoration: underline; text-underline-offset: 3px; }
 .community-contact { display: flex; gap: 14px 24px; align-items: center; flex-wrap: wrap; }
+.attribute-filters {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  align-items:end;
+}
+
+.attribute-filters>label, .attribute-filters .year-select {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.attribute-filters select {
+  max-width:100%;
+  padding:9px 12px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
+  color:var(--text);
+}
+
+.contact-fields {
+  border:0;
+  padding:0;
+  min-width:0;
+}
+
+.contact-fields legend {
+  font-weight:600;
+  margin-bottom:12px;
+}
+
+.contact-row {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;
+  gap:10px;
+  align-items:end;
+  margin-bottom:12px;
+}
+
+.contact-row label {
+  min-width:0;
+}
+
+.contact-row input {
+  width:100%;
+  min-width:0;
+}
+
+.article-field {
+  margin:8px 0;
+  color:var(--muted);
+}
+
+.article-item time,.article-page>time {
+  margin-right: 12px;
+  color:var(--muted);
+  font-size:.85rem;
+}
+
+.copy-contact {
+  margin-left:8px;
+}
+
+.article-contact p {
+  overflow-wrap:anywhere;
+}
+
+
 @media(max-width:580px) {
+  .contact-row {
+    grid-template-columns: minmax(0,1fr) minmax(0,2fr);
+  }
+  .contact-row>button {
+    grid-column: 1/-1;
+    justify-self: start;
+  }
+  .attribute-filters {
+    width: 100%;
+  }
+
   .community-content { margin-bottom: 42px; }
   .community-people { grid-template-columns: 1fr; }
   .community-person { gap: 12px; }
@@ -1473,6 +1555,7 @@ proportions; no composition, mask, crop or duplicate seal. */
 }
 
 :lang(en) .language-toggle [lang=en],
+:lang(zh-CN) .language-toggle [lang=zh-CN],
 :lang(zh-Hant) .language-toggle [lang=zh-Hant] {
   color: var(--text);
   font-weight: 700;

@@ -2,13 +2,13 @@
   const i18n = await window.HKUST_I18N.ready;
   const { t } = i18n;
   const form = document.querySelector('#submission-form');
-  const category = document.querySelector('#category');
+  let category;
   const fields = document.querySelector('#dynamic-fields');
   const preview = document.querySelector('#preview');
   const previewText = document.querySelector('#preview-text');
   const button = document.querySelector('#preview-button');
   const draftStatus = document.querySelector('#draft-status');
-  const draftKey = 'hkust-draft-v1';
+  const draftKey = 'hkust-draft-v2';
   const make = (tag, text) => {
     const node = document.createElement(tag);
     if (text != null) node.textContent = text;
@@ -19,27 +19,79 @@
     if (!response.ok) throw new Error('Could not load schema');
     return response.json();
   }).then(schema => {
-    for (const item of schema.categories) {
-      const option = ui('option', item.label);
-      option.value = item.id;
-      category.append(option);
-    }
-    category.required = true;
     const controls = new Map();
-    let educationFields = null;
+    let contactRows;
+    const readContacts = () => [...contactRows.children].flatMap(row => {
+      const [type, value] = row.querySelectorAll('input');
+      value.setCustomValidity(Boolean(type.value.trim()) !== Boolean(value.value.trim()) ? t('请补全联系类型和联系信息') : '');
+      return type.value.trim() || value.value.trim() ? [{type: type.value.trim(), value: value.value.trim()}] : [];
+    });
+    const values = () => ({...Object.fromEntries(new FormData(form)), contact: readContacts()});
     let bodyPreview = null;
     let bodyPreviewButton = null;
     for (const field of schema.fields) {
+      if (field.name === 'contact') {
+        const section = make('fieldset');
+        section.className = 'field contact-fields';
+        section.append(ui('legend', '联系方式（选填）'));
+        contactRows = make('div');
+        const add = ui('button', '添加联系方式');
+        add.type = 'button';
+        add.className = 'secondary-button';
+        const addRow = () => {
+          const row = make('div');
+          row.className = 'contact-row';
+          for (const [key, label, placeholder, limit] of [
+            ['type', '联系类型', field.typePlaceholder, field.typeMaxLength],
+            ['value', '联系信息', field.valuePlaceholder, field.valueMaxLength]
+          ]) {
+            const wrapper = make('label');
+            wrapper.append(ui('span', label));
+            const input = make('input');
+            input.type = 'text';
+            input.dataset.contact = key;
+            input.maxLength = limit;
+            i18n.attribute(input, 'placeholder', placeholder);
+            input.addEventListener('input', () => { row.querySelectorAll('input').forEach(node => node.setCustomValidity('')); });
+            wrapper.append(input);
+            row.append(wrapper);
+          }
+          const remove = ui('button', '删除联系方式');
+          remove.type = 'button';
+          remove.className = 'secondary-button';
+          remove.addEventListener('click', () => { row.remove(); if (!contactRows.children.length) addRow(); add.disabled = false; form.dispatchEvent(new Event('input')); });
+          row.append(remove);
+          contactRows.append(row);
+          add.disabled = contactRows.children.length >= field.maxItems;
+        };
+        add.addEventListener('click', addRow);
+        form.addEventListener('reset', () => { contactRows.replaceChildren(); addRow(); });
+        section.append(contactRows, add, ui('small', field.hint));
+        fields.append(section);
+        addRow();
+        continue;
+      }
       const wrapper = make('div');
       wrapper.className = 'field';
       const label = make('label');
       label.append(ui('span', field.label), field.required ? make('span', ' *') : ui('span', '（选填）'));
       label.htmlFor = field.name;
-      const control = make(field.type === 'textarea' ? 'textarea' : 'input');
+      const control = make(field.type === 'textarea' ? 'textarea' : field.type === 'select' ? 'select' : 'input');
       control.id = field.name;
       control.name = field.name;
       control.required = Boolean(field.required);
-      if (field.type !== 'textarea') control.type = field.type;
+      if (field.type === 'text') control.type = 'text';
+      if (field.type === 'select') {
+        const placeholder = ui('option', field.placeholder);
+        placeholder.value = '';
+        control.append(placeholder);
+        for (const item of (field.name === 'category' ? schema.categories.map(item => ({value:item.id, label:item.label})) : field.options)) {
+          const option = ui('option', item.label);
+          option.value = item.value;
+          control.append(option);
+        }
+      }
+      if (field.name === 'category') category = control;
       if (field.maxLength) control.maxLength = field.maxLength;
       if (field.placeholder) i18n.attribute(control, 'placeholder', field.placeholder);
       if (field.inputMode) control.inputMode = field.inputMode;
@@ -192,17 +244,7 @@
         guidance.className = 'field-hint';
         wrapper.append(guidance);
       }
-      if (field.group) {
-        if (!educationFields) {
-          educationFields = make('fieldset');
-          educationFields.className = 'education-fields';
-          educationFields.append(ui('legend', field.group));
-          fields.append(educationFields);
-        }
-        educationFields.append(wrapper);
-      } else {
-        fields.append(wrapper);
-      }
+      fields.append(wrapper);
       controls.set(field.name, control);
     }
     // Prefer CSS field-sizing: content; fallback to scrollHeight for WebKit
@@ -225,9 +267,9 @@
       if (year.value !== clean) year.value = clean;
     });
     const updateCategory = () => {
-      for (const name of ['destination', 'program']) {
+      for (const name of ['destination']) {
         const definition = schema.fields.find(field => field.name === name);
-        i18n.attribute(controls.get(name), 'placeholder', definition.placeholders[category.value] || '');
+        i18n.attribute(controls.get(name), 'placeholder', definition.placeholders[category.value] || definition.placeholder);
       }
     };
     category.addEventListener('change', updateCategory);
@@ -249,9 +291,8 @@
       hidePreview();
       if (bodyPreview && !bodyPreview.hidden) renderMarkdown(controls.get('body').value, bodyPreview);
       try {
-        const values = Object.fromEntries(new FormData(form));
-        delete values.contact;
-        sessionStorage.setItem(draftKey, JSON.stringify(values));
+        const draft = Object.fromEntries(new FormData(form));
+        sessionStorage.setItem(draftKey, JSON.stringify(draft));
       } catch { i18n.text(draftStatus, '无法暂存草稿，请自行备份。'); }
     };
     form.addEventListener('input', save);
@@ -316,32 +357,34 @@
       nav.append(panel);
       return nav;
     };
-    button.addEventListener('click', () => {
-      for (const field of schema.fields) {
+    const validateForm = () => {
+      for (const field of schema.fields.filter(field => field.name !== 'contact')) {
         const control = controls.get(field.name);
         control.setCustomValidity(field.required && !control.value.trim() ? t('请填写{field}', {field: field.label}) : '');
       }
-      if (!form.reportValidity()) return;
+      readContacts();
+      return form.reportValidity();
+    };
+    button.addEventListener('click', () => {
+      if (!validateForm()) return;
       const data = new FormData(form);
       const selected = schema.categories.find(item => item.id === data.get('category'));
       if (!selected) return;
       const author = String(data.get('author') || '').trim();
       const destination = String(data.get('destination') || '').trim();
-      const program = String(data.get('program') || '').trim();
-      const title = destination + (program ? ' · ' + program : '');
+      const title = author + ' · ' + destination;
       previewText.replaceChildren();
       const back = ui('span', '返回{category}', {category: selected.label});
       back.className = 'article-back';
       previewText.append(back, make('h1', title));
       const byline = make('p');
-      const details = [make('span', author), ui('span', '{year} 届', {year: String(data.get('year')).trim()}),
-        make('span', String(data.get('college') || '').trim()), make('span', String(data.get('major') || '').trim())];
+      const details = [ui('span', schema.fields.find(field => field.name === 'campus').options.find(item => item.value === data.get('campus')).label), make('span', data.get('year')), make('span', data.get('degree'))];
       details.filter(node => node.textContent).forEach((node, index) => {
         if (index) byline.append(document.createTextNode(' · '));
         byline.append(node);
       });
       byline.className = 'article-byline';
-      previewText.append(byline);
+      previewText.append(byline, make('p', data.get('field')));
       const body = make('div');
       body.className = 'article-body';
       renderMarkdown(String(data.get('body') || ''), body);
@@ -349,11 +392,19 @@
       if (toc) previewText.append(toc);
       previewText.append(body);
       if (toc) window.initArticleToc?.(previewText);
-      const contact = String(data.get('contact') || '').trim();
-      if (contact) {
+      const contacts = readContacts();
+      if (contacts.length) {
         const aside = make('aside');
         aside.className = 'article-contact';
-        aside.append(ui('strong', '联系作者'), make('p', contact));
+        aside.append(ui('strong', '联系作者'));
+        for (const row of contacts) {
+          const line = make('p', row.type + '：' + row.value + ' ');
+          const copy = ui('button', '复制');
+          copy.type = 'button';
+          copy.dataset.copy = row.value;
+          line.append(copy);
+          aside.append(line);
+        }
         previewText.append(aside);
       }
       preview.hidden = false;
@@ -387,7 +438,7 @@
           widgetId = window.turnstile.render(captchaHost, {
             sitekey: config.turnstileSiteKey,
             action: 'hkust_feiyue_submit',
-            language: i18n.language() === 'zh' ? 'zh-TW' : 'en',
+            language: i18n.language() === 'en' ? 'en' : i18n.language() === 'zh' ? 'zh-TW' : 'zh-CN',
             callback: () => {
               if (!submitting) {
                 submitButton.disabled = false;
@@ -406,11 +457,11 @@
       captchaScript.onerror = () => say('无法加载人机验证，请稍后重试。', 'error');
       document.head.append(captchaScript);
       submitButton.addEventListener('click', async () => {
-        if (submitting || !form.reportValidity()) return;
+        const data = values();
+        if (submitting || !validateForm()) return;
         const token = widgetId === null ? '' : window.turnstile?.getResponse(widgetId);
         if (!token) { say('请先完成人机验证。', 'error'); return; }
-        const values = Object.fromEntries(new FormData(form));
-        const payload = { version: 1, ...values, turnstileToken: token };
+        const payload = { version: 1, ...data, turnstileToken: token };
         if (new TextEncoder().encode(JSON.stringify(payload)).length > 65536) {
           say('内容过长，请精简后重试。', 'error');
           return;
@@ -451,7 +502,8 @@
 
     addEventListener('hkust:language', () => {
       updateCategory();
-      for (const field of schema.fields) {
+      readContacts();
+      for (const field of schema.fields.filter(field => field.name !== 'contact')) {
         const control = controls.get(field.name);
         if (control.validity.customError) control.setCustomValidity(t('请填写{field}', {field: field.label}));
       }
