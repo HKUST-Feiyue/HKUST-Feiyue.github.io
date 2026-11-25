@@ -1416,7 +1416,7 @@ html:has(.search-dialog[open]) :is(main, .site-footer, .campus-banner) { visibil
   .community-person { gap: 12px; }
 }
 
-/* One shared right-arrow interaction, following the personal-site implementation. */
+/* Shared right-arrow interaction. */
 .link-arrow {
   display: inline-block;
   vertical-align: middle;

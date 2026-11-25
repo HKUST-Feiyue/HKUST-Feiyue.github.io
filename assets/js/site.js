@@ -1,5 +1,4 @@
-// Search and article navigation adapted from FuTseYi/FuTseYi (MIT).
-// See personal-site-LICENSE.txt; preserve the handbook's data and palette.
+// Search and article navigation. License: personal-site-LICENSE.txt.
 (async () => {
   const i18n = await window.HKUST_I18N.ready;
   const { t } = i18n;
@@ -14,7 +13,7 @@
       `background:${accent};color:${styles.getPropertyValue('--bg').trim()};font-weight:700;padding:5px 8px;border-radius:6px 0 0 6px`,
       `background:${styles.getPropertyValue('--soft').trim()};color:${accent};padding:5px 8px;border-radius:0 6px 6px 0`);
   }
-  // Same three-way system / light / dark cycle as the personal site.
+  // Three-way system / light / dark cycle.
   const modes = ['system', 'light', 'dark'];
   const themeButton = document.querySelector('#theme-toggle');
   const systemTheme = matchMedia('(prefers-color-scheme: dark)');
@@ -45,7 +44,7 @@
   window.addEventListener('pageshow', syncThemeControls);
   syncThemeControls();
   addEventListener('hkust:language', () => { syncThemeControls(); setMenu(isOpen()); });
-  // Match the personal site's article directory while retaining native details.
+  // Article directory with native details fallback.
   const initArticleToc = article => {
     const contents = article.querySelector('details.article-toc');
     if (!contents) return;
