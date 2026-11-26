@@ -212,7 +212,9 @@
     "2026 Fall · MPhil": "2026 Fall · MPhil",
     "入学季": "Intake",
     "请选择": "Select",
-    "按实际入学公历年份填写，不是学年或毕业年份。": "Use your actual entry calendar year, not the academic or graduation year."
+    "按实际入学公历年份填写，不是学年或毕业年份。": "Use your actual entry calendar year, not the academic or graduation year.",
+    "{field}最多{limit}字，目前{count}字。": "{field} allows up to {limit} characters; currently {count}.",
+    "{field}含有无法提交的控制字符，请删除后重试。": "{field} contains unsupported control characters. Remove them and try again."
   },
   "zh": {
     "首页": "首頁",
@@ -427,6 +429,8 @@
     "2026 Fall · MPhil": "2026 Fall · MPhil",
     "入学季": "入學季",
     "请选择": "請選擇",
-    "按实际入学公历年份填写，不是学年或毕业年份。": "按實際入學公曆年份填寫，不是學年或畢業年份。"
+    "按实际入学公历年份填写，不是学年或毕业年份。": "按實際入學公曆年份填寫，不是學年或畢業年份。",
+    "{field}最多{limit}字，目前{count}字。": "{field}最多{limit}字，目前{count}字。",
+    "{field}含有无法提交的控制字符，请删除后重试。": "{field}含有無法提交的控制字元，請刪除後重試。"
   }
 }

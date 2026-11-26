@@ -20,10 +20,17 @@
     return response.json();
   }).then(schema => {
     const controls = new Map();
+    const textError = (value, label, limit) => {
+      if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) return t('{field}含有无法提交的控制字符，请删除后重试。', {field: label});
+      const count = [...value.trim()].length;
+      return limit && count > limit ? t('{field}最多{limit}字，目前{count}字。', {field: label, limit, count}) : '';
+    };
+    const fieldError = (control, field) => field.required && !control.value.trim() ? t('请填写{field}', {field: field.label}) : textError(control.value, field.label, field.maxLength);
     let contactRows;
     const readContacts = () => [...contactRows.children].flatMap(row => {
       const [type, value] = row.querySelectorAll('input');
-      value.setCustomValidity(Boolean(type.value.trim()) !== Boolean(value.value.trim()) ? t('请补全联系类型和联系信息') : '');
+      type.setCustomValidity(textError(type.value, '联系类型', type.maxLength));
+      value.setCustomValidity(textError(value.value, '联系信息', value.maxLength) || (Boolean(type.value.trim()) !== Boolean(value.value.trim()) ? t('请补全联系类型和联系信息') : ''));
       return type.value.trim() || value.value.trim() ? [{type: type.value.trim(), value: value.value.trim()}] : [];
     });
     const values = () => ({...Object.fromEntries(new FormData(form)), contact: readContacts()});
@@ -406,7 +413,7 @@
       for (const field of schema.fields.filter(field => field.name !== 'contact')) {
         const control = controls.get(field.name);
         const target = field.name === 'campus' ? form.querySelector('[name=campus]') : control;
-        target.setCustomValidity(field.required && !control.value.trim() ? t('请填写{field}', {field: field.label}) : '');
+        target.setCustomValidity(fieldError(control, field));
       }
       readContacts();
       return form.reportValidity();
@@ -493,6 +500,7 @@
           widgetId = window.turnstile.render(captchaHost, {
             sitekey: config.turnstileSiteKey,
             action: 'hkust_feiyue_submit',
+            'response-field': false,
             language: i18n.language() === 'zh' ? 'zh-TW' : 'en',
             callback: () => {
               if (!submitting) {
@@ -561,7 +569,7 @@
       for (const field of schema.fields.filter(field => field.name !== 'contact')) {
         const control = controls.get(field.name);
         const target = field.name === 'campus' ? form.querySelector('[name=campus]') : control;
-        if (target.validity.customError) target.setCustomValidity(t('请填写{field}', {field: field.label}));
+        if (target.validity.customError) target.setCustomValidity(fieldError(control, field));
       }
     });
   }).catch(() => {
