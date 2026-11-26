@@ -42,20 +42,20 @@
     },
     {
       "name": "campus",
-      "label": "校区",
+      "label": "校园",
       "type": "radio",
       "required": true,
       "options": [
         {
           "value": "hk",
-          "label": "香港校区"
+          "label": "香港校园"
         },
         {
           "value": "gz",
-          "label": "广州校区"
+          "label": "广州校园"
         }
       ],
-      "placeholder": "请选择校区"
+      "placeholder": "请选择校园"
     },
     {
       "name": "year",
