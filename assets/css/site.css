@@ -1964,7 +1964,6 @@ proportions; no composition, mask, crop or duplicate seal. */
   }
 
   html {
-  overscroll-behavior-y: none;
   scroll-padding-top: calc(var(--mobile-header-height) + 24px);
   }
 
