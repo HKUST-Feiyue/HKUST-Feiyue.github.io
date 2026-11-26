@@ -305,20 +305,6 @@
       controls.set(field.name, control);
     }
     window.HKUSTSelect.enhance(fields);
-    // Prefer CSS field-sizing: content; fallback to scrollHeight for WebKit
-    // and older browsers, without a second draggable overlay on textareas.
-    for (const control of controls.values()) {
-      if (control.tagName !== 'TEXTAREA') continue;
-      if (CSS.supports('field-sizing', 'content')) continue;
-      const grow = () => {
-        if (control.hidden) return;
-        control.style.height = 'auto';
-        control.style.height = Math.max(control.id === 'body' ? 240 : 96, control.scrollHeight) + 'px';
-      };
-      control.addEventListener('input', grow);
-      window.addEventListener('resize', grow, {passive:true});
-      requestAnimationFrame(grow);
-    }
     const year = controls.get('year');
     year.addEventListener('input', () => {
       const clean = year.value.replace(/[^0-9]/g, '').slice(0, 4);
@@ -432,11 +418,14 @@
       if (!selected) return;
       const author = String(data.get('author') || '').trim();
       const destination = String(data.get('destination') || '').trim();
-      const title = author + ' · ' + destination;
       previewText.replaceChildren();
       const back = ui('span', '返回{category}', {category: selected.label});
       back.className = 'article-back';
-      previewText.append(back, make('h1', title));
+      const authorLine = make('p', author);
+      authorLine.className = 'article-author';
+      const categoryLine = ui('p', selected.label);
+      categoryLine.className = 'article-category';
+      previewText.append(back, categoryLine, make('h1', destination), authorLine);
       const byline = make('p');
       const details = [ui('span', schema.fields.find(field => field.name === 'campus').options.find(item => item.value === data.get('campus')).label), make('span', data.get('year') + ' ' + schema.fields.find(field => field.name === 'term').options.find(option => option.value === data.get('term')).label), make('span', data.get('degree'))];
       details.filter(node => node.textContent).forEach((node, index) => {
@@ -444,7 +433,9 @@
         byline.append(node);
       });
       byline.className = 'article-byline';
-      previewText.append(byline, make('p', data.get('field')));
+      const fieldLine = make('p', data.get('field'));
+      fieldLine.className = 'article-field';
+      previewText.append(byline, fieldLine);
       const body = make('div');
       body.className = 'article-body';
       renderMarkdown(String(data.get('body') || ''), body);

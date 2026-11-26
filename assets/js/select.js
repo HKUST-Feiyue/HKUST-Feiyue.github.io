@@ -3,7 +3,6 @@
   const instances = new WeakMap();
   window.HKUSTSelect = {
     enhance(root = document) {
-      if (!('showPopover' in HTMLElement.prototype)) return;
       root.querySelectorAll('select').forEach(select => {
         if (instances.has(select)) return;
         const base = select.id.replace(/-filter$/, '');

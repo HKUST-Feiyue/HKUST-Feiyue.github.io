@@ -284,17 +284,13 @@
   let activeCategory = 'all';
   const renderFilters = () => {
     let visibleCount = 0;
-    let hasDemo = false;
     for (const card of cards) {
       const visible = (activeCategory === 'all' || card.dataset.category === activeCategory) &&
         attributes.every(control => control.value === 'all' || card.dataset[control.id.replace('-filter', '')] === control.value);
       card.hidden = !visible;
-      if (visible) {
-        visibleCount++;
-        hasDemo ||= card.dataset.demo === 'true';
-      }
+      if (visible) visibleCount++;
     }
-    count.textContent = t('{count} 篇经历', {count: visibleCount}) + (hasDemo ? t(' · 含演示内容') : '');
+    count.textContent = t('{count} 篇经历', {count: visibleCount});
     empty.hidden = visibleCount > 0;
   };
   const dialog = document.querySelector('#search-dialog');
@@ -304,7 +300,6 @@
   const searchDesktopParent = searchOpen.parentElement;
   const syncSearchPlacement = () => {
     if (mobile.matches) toggle.before(searchOpen);
-    else if (archive) searchDesktopParent.append(searchOpen);
     else searchDesktopParent.append(searchOpen);
   };
   syncSearchPlacement();
@@ -378,6 +373,10 @@
     i18n.text(results, '正在搜索…');
     try {
       await loadCards();
+      if (!cardByPath.size) {
+        i18n.text(results, '没有找到匹配内容');
+        return;
+      }
       const pagefind = await loadSearch();
       const found = await pagefind.debouncedSearch(query);
       if (id !== requestId) return;
@@ -390,7 +389,7 @@
       const matches = [...cardByPath].flatMap(([path, card]) => {
         if (card.hidden) return [];
         const title = card.querySelector('h3 a').textContent;
-        const byline = card.querySelector('.article-meta').textContent + ' · ' + card.querySelector('.article-field').textContent;
+        const byline = card.querySelector('.article-author').textContent + ' · ' + card.querySelector('.article-meta').textContent + ' · ' + card.querySelector('.article-field').textContent;
         const titleMatch = normalize(title).includes(titleQuery);
         const bylineMatch = normalize(byline).includes(titleQuery);
         const body = bodyMatches.get(path);
@@ -410,7 +409,7 @@
         title.className = 'search-title';
         highlight(title, match.title, query);
         link.append(title);
-        for (const selector of ['.article-meta', '.article-field']) {
+        for (const selector of ['.article-author', '.article-meta', '.article-field']) {
           const metadata = document.createElement('span');
           metadata.className = 'search-match';
           metadata.textContent = match.card.querySelector(selector).textContent;
@@ -448,6 +447,10 @@
     }
   });
   if (!archive) return;
+  const renderArchiveHeading = current => {
+    document.querySelector('#stories-heading').textContent = current ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
+    document.querySelector('#category-intro').textContent = current ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
+  };
   const renderView = () => {
     if (dialog.open) dialog.close();
     const params = new URLSearchParams(location.search);
@@ -464,8 +467,7 @@
     nav.querySelectorAll('[aria-current]').forEach(link => link.removeAttribute('aria-current'));
     const active = isHome ? nav.querySelector('a:not([data-category])') : current || nav.querySelector('[data-category="all"]');
     active?.setAttribute('aria-current', 'page');
-    document.querySelector('#stories-heading').textContent = current ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
-    document.querySelector('#category-intro').textContent = current ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
+    renderArchiveHeading(current);
     for (const control of attributes) {
       const key = control.id.replace('-filter', '');
       const available = new Set(cards.filter(card => activeCategory === 'all' || card.dataset.category === activeCategory).map(card => card.dataset[key]));
@@ -546,10 +548,7 @@
   renderView();
   addEventListener('hkust:language', () => {
     const current = nav.querySelector('[data-category][aria-current=page]');
-    document.querySelector('#stories-heading').textContent = current && current.dataset.category !== 'all'
-      ? t('{category}经历', {category: current.dataset.categoryLabel}) : t('全部经历');
-    document.querySelector('#category-intro').textContent = current && current.dataset.category !== 'all'
-      ? t('{description}，阅读同学的经验分享。', {description: current.dataset.categoryDescription}) : t('按方向浏览同学分享的升学与职业经验。');
+    renderArchiveHeading(current?.dataset.category === 'all' ? null : current);
     attributes.forEach(control => control.dispatchEvent(new Event('selectsync')));
     renderFilters();
   });
