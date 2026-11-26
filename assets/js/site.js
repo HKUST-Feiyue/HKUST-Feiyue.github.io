@@ -254,6 +254,33 @@
   const siteRoot = siteUrl.pathname;
   const indexedPath = path => path.startsWith(siteRoot) ? '/' + path.slice(siteRoot.length) : path;
   const cardByPath = new Map(cards.map(card => [indexedPath(card.querySelector('h3 a').pathname), card]));
+  const returnKey = 'hkust-article-return';
+  let articleReturn = history.state?.articleReturn;
+  try { articleReturn ||= JSON.parse(sessionStorage.getItem(returnKey)); } catch {}
+  const backLink = document.querySelector('.article-back');
+  if (backLink && articleReturn?.article === location.pathname) {
+    history.replaceState({...history.state, articleReturn}, '');
+    try { sessionStorage.removeItem(returnKey); } catch {}
+    backLink.href = articleReturn.url;
+    i18n.text(backLink.querySelector('[data-i18n]'), '返回{category}', {category: articleReturn.category});
+    backLink.addEventListener('click', () => {
+      const destination = new URL(articleReturn.url);
+      destination.searchParams.set('lang', i18n.language());
+      backLink.href = articleReturn.url = destination.href;
+      articleReturn.restore = true;
+      try { sessionStorage.setItem(returnKey, JSON.stringify(articleReturn)); } catch {}
+    });
+  }
+  if (archive) document.addEventListener('click', event => {
+    const link = event.target.closest('.article-item a, #search-results a');
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const destination = new URL(link.href);
+    if (destination.origin !== location.origin || !destination.pathname.startsWith(siteRoot + 'articles/')) return;
+    const current = nav.querySelector('[data-category][aria-current=page]');
+    const context = {article: destination.pathname, url: location.href, top: scrollY,
+      category: current?.dataset.categoryLabel || '全部经历'};
+    try { sessionStorage.setItem(returnKey, JSON.stringify(context)); } catch {}
+  });
   let cardRequest;
   const loadCards = () => archive ? Promise.resolve() : cardRequest ??= fetch(siteUrl).then(response => {
     if (!response.ok) throw new Error('Article catalogue unavailable');
@@ -389,7 +416,7 @@
       const matches = [...cardByPath].flatMap(([path, card]) => {
         if (card.hidden) return [];
         const title = card.querySelector('h3 a').textContent;
-        const byline = card.querySelector('.article-author').textContent + ' · ' + card.querySelector('.article-meta').textContent + ' · ' + card.querySelector('.article-field').textContent;
+        const byline = card.querySelector('.article-author').textContent + ' · ' + card.querySelector('.article-meta').textContent;
         const titleMatch = normalize(title).includes(titleQuery);
         const bylineMatch = normalize(byline).includes(titleQuery);
         const body = bodyMatches.get(path);
@@ -409,7 +436,7 @@
         title.className = 'search-title';
         highlight(title, match.title, query);
         link.append(title);
-        for (const selector of ['.article-author', '.article-meta', '.article-field']) {
+        for (const selector of ['.article-author', '.article-meta']) {
           const metadata = document.createElement('span');
           metadata.className = 'search-match';
           metadata.textContent = match.card.querySelector(selector).textContent;
@@ -546,6 +573,10 @@
   });
   window.addEventListener('popstate', renderView);
   renderView();
+  if (articleReturn?.restore && articleReturn.url === location.href) {
+    try { sessionStorage.removeItem(returnKey); } catch {}
+    requestAnimationFrame(() => scrollTo({top: articleReturn.top, behavior: 'instant'}));
+  }
   addEventListener('hkust:language', () => {
     const current = nav.querySelector('[data-category][aria-current=page]');
     renderArchiveHeading(current?.dataset.category === 'all' ? null : current);

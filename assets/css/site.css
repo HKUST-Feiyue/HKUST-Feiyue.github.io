@@ -1053,7 +1053,7 @@ html:has(.search-dialog[open]) :is(main, .site-footer, .campus-banner) { visibil
 }
 
 .article-toc-side { display: none; }
-.article-tools { display: flex; justify-content: flex-end; margin: 8px 0; }
+.article-tools { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 14px; }
 .article-toc-side ul {
   --fade-top: 0px;
   --fade-bottom: 0px;
@@ -1356,12 +1356,6 @@ html:has(.search-dialog[open]) :is(main, .site-footer, .campus-banner) { visibil
 .contact-row input {
   width:100%;
   min-width:0;
-}
-
-.article-field {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 .article-page>time {
